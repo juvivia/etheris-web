@@ -96,8 +96,8 @@ fn App() -> impl IntoView {
         <main class="shell">
             <header class="topbar">
                 <div>
-                    <h1>"ETHERIS"</h1>
-                    <p>"THE GAME · FICHA DE PERSONAGEM"</p>
+                    <h1>"SAMSARA"</h1>
+                    <p>"O RPG"</p>
                 </div>
                 <span class="level">"NÍVEL " {move || sheet.get().level}</span>
             </header>
