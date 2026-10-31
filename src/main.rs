@@ -113,13 +113,15 @@ fn App() -> impl IntoView {
                         </label>
                         <label>
                            <label>
+   
+<label>
     "Raça"
     <select
         prop:value={move || sheet.get().race.clone()}
         on:change={move |ev| {
-            let race = event_target_value(&ev);
+            let value = event_target_value(&ev);
             sheet.update(|s| {
-                s.race = race;
+                s.race = value;
                 s.specialization.clear();
             });
         }}
@@ -130,11 +132,15 @@ fn App() -> impl IntoView {
         <option value="Áureo">"Áureo"</option>
     </select>
 </label>
-                       <label>
+
+<label>
     "Especialização"
     <select
         prop:value={move || sheet.get().specialization.clone()}
-        on:change={move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))}
+        on:change={move |ev| {
+            let value = event_target_value(&ev);
+            sheet.update(|s| s.specialization = value);
+        }}
         prop:disabled={move || sheet.get().race.is_empty()}
     >
         <option value="">"Selecione uma especialização"</option>
@@ -152,11 +158,15 @@ fn App() -> impl IntoView {
         }}
     </select>
 </label>
-                           <label>
+
+<label>
     "Comunidade"
     <select
         prop:value={move || sheet.get().community.clone()}
-        on:change={move |ev| sheet.update(|s| s.community = event_target_value(&ev))}
+        on:change={move |ev| {
+            let value = event_target_value(&ev);
+            sheet.update(|s| s.community = value);
+        }}
     >
         <option value="">"Selecione uma comunidade"</option>
         <option value="Pântano">"Pântano"</option>
@@ -166,11 +176,15 @@ fn App() -> impl IntoView {
         <option value="Tundra">"Tundra"</option>
     </select>
 </label>
-                            <label>
+
+<label>
     "Classe"
     <select
         prop:value={move || sheet.get().class_name.clone()}
-        on:change={move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))}
+        on:change={move |ev| {
+            let value = event_target_value(&ev);
+            sheet.update(|s| s.class_name = value);
+        }}
     >
         <option value="">"Selecione uma classe"</option>
         <option value="Médico">"Médico"</option>
@@ -180,6 +194,7 @@ fn App() -> impl IntoView {
         <option value="Cozinheiro">"Cozinheiro"</option>
     </select>
 </label>
+
                             "Nível"
                             <input type="number" min="1" max="10" prop:value={move || sheet.get().level.to_string()} on:input={move |ev| {
                                 if let Ok(v) = event_target_value(&ev).parse::<u8>() {
