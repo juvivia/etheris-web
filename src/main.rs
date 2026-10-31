@@ -127,7 +127,7 @@ fn App() -> impl IntoView {
                         <label>
                             "Raça"
                             <select
-                                value=move || sheet.get().race.clone()
+                                prop:value=move || sheet.get().race.clone()
                                 on:change=move |ev| {
                                     let selected = event_target_value(&ev);
                                     sheet.update(|s| {
@@ -151,7 +151,7 @@ fn App() -> impl IntoView {
                         <label>
                             "Especialização"
                             <select
-                                value=move || sheet.get().specialization.clone()
+                                prop:value=move || sheet.get().specialization.clone()
                                 on:change=move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))
                             >
                                 <option value="">"Selecione"</option>
@@ -169,7 +169,7 @@ fn App() -> impl IntoView {
                         <label>
                             "Comunidade"
                             <select
-                                value=move || sheet.get().community.clone()
+                                prop:value=move || sheet.get().community.clone()
                                 on:change=move |ev| sheet.update(|s| s.community = event_target_value(&ev))
                             >
                                 <option value="">"Selecione"</option>
@@ -184,7 +184,7 @@ fn App() -> impl IntoView {
                         <label>
                             "Classe"
                             <select
-                                value=move || sheet.get().class_name.clone()
+                                prop:value=move || sheet.get().class_name.clone()
                                 on:change=move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))
                             >
                                 <option value="">"Selecione"</option>
@@ -319,49 +319,46 @@ fn App() -> impl IntoView {
                         "+ Adicionar carta"
                     </button>
 
-                    <div class="item-list">
-                        {move || {
-                            let items = sheet.get();
-                            if items.items.is_empty() {
-                                view! { <p class="hint">"Nenhum item adicionado ainda."</p> }
-                            } else {
-                                view! {
-                                    <div>
-                                        {items.items.iter().enumerate().map(|(index, item)| {
-                                            let item_name_value = item.name.clone();
-                                            let item_condition = item.condition.clone();
-                                            let item_advantage = item.advantage.clone();
-                                            let item_cards = item.cards;
-                                            view! {
-                                                <div class="item">
-                                                    <div class="item-title">
-                                                        <strong>{item_name_value}</strong>
-                                                        <button class="remove" on:click=move |_| {
-                                                            sheet.update(|s| {
-                                                                if index < s.items.len() {
-                                                                    s.items.remove(index);
-                                                                }
-                                                            });
-                                                        }>
-                                                            "Remover"
-                                                        </button>
-                                                    </div>
-                                                    <p>{format!("Estado: {} · {} carta(s)", item_condition, item_cards)}</p>
-                                                    <p class="advantage">
-                                                        {if item_advantage.is_empty() {
-                                                            "Sem vantagem registrada".to_string()
-                                                        } else {
-                                                            format!("Vantagem em teste: {}", item_advantage)
-                                                        }}
-                                                    </p>
-                                                </div>
-                                            }
-                                        }).collect_view()}
-                                    </div>
-                                }
-                            }
-                        }}
-                    </div>
+                    <Show when=move || sheet.get().items.is_empty()>
+                        <p class="hint">"Nenhum item adicionado ainda."</p>
+                    </Show>
+
+                    <Show when=move || !sheet.get().items.is_empty()>
+                        <div class="item-list">
+                            {move || {
+                                sheet.get().items.iter().enumerate().map(|(index, item)| {
+                                    let item_name_value = item.name.clone();
+                                    let item_condition = item.condition.clone();
+                                    let item_advantage = item.advantage.clone();
+                                    let item_cards = item.cards;
+                                    view! {
+                                        <div class="item">
+                                            <div class="item-title">
+                                                <strong>{item_name_value}</strong>
+                                                <button class="remove" on:click=move |_| {
+                                                    sheet.update(|s| {
+                                                        if index < s.items.len() {
+                                                            s.items.remove(index);
+                                                        }
+                                                    });
+                                                }>
+                                                    "Remover"
+                                                </button>
+                                            </div>
+                                            <p>{format!("Estado: {} · {} carta(s)", item_condition, item_cards)}</p>
+                                            <p class="advantage">
+                                                {if item_advantage.is_empty() {
+                                                    "Sem vantagem registrada".to_string()
+                                                } else {
+                                                    format!("Vantagem em teste: {}", item_advantage)
+                                                }}
+                                            </p>
+                                        </div>
+                                    }
+                                }).collect_view()
+                            }}
+                        </div>
+                    </Show>
                 </Show>
 
                 <Show when=move || tab.get() == 2>
