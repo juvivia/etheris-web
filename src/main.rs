@@ -65,52 +65,13 @@ fn save_sheet(sheet: &Sheet) {
     }
 }
 
-fn race_options() -> [&'static str; 3] {
-    ["Humano", "Pesadelo", "Áureo"]
-}
-
-fn community_options() -> [&'static str; 5] {
-    ["Pântano", "Tundra", "Cidade", "Nômade", "Deserto"]
-}
-
-fn class_options() -> [&'static str; 5] {
-    ["Médico", "Artífice", "Engenheiro", "Magus", "Cozinheiro"]
-}
-
-fn specialization_options_for_race(race: &str) -> Vec<String> {
-    match race {
-        "Humano" => vec![
-            "Amalgamos".to_string(),
-            "Flagelos".to_string(),
-            "Aplicadores".to_string(),
-            "Suplícios".to_string(),
-        ],
-        "Áureo" => vec!["Místico".to_string(), "Corpóreo".to_string()],
-        "Pesadelo" => vec!["Rei".to_string(), "Dama".to_string(), "Valete".to_string()],
-        _ => Vec::new(),
-    }
-}
-
 #[component]
 fn App() -> impl IntoView {
     let sheet = RwSignal::new(load_sheet());
     let tab = RwSignal::new(0usize);
     let item_name = RwSignal::new(String::new());
     let item_advantage = RwSignal::new(String::new());
-    let labels = ["INT", "FIS", "DOM", "VEL", "HAB"];
-
     Effect::new(move |_| save_sheet(&sheet.get()));
-
-    let inventory_total = move || {
-        sheet
-            .get()
-            .items
-            .iter()
-            .map(|item| item.cards as u16)
-            .sum::<u16>()
-    };
-
-    let specialization_options = move || specialization_options_for_race(&sheet.get().race);
 
     view! {
         <main class="shell">
@@ -137,6 +98,7 @@ fn App() -> impl IntoView {
             <section class="content">
                 <Show when={move || tab.get() == 0}>
                     <h2>"Personagem"</h2>
+
                     <div class="form-grid">
                         <label>
                             "Nome"
@@ -148,22 +110,25 @@ fn App() -> impl IntoView {
                             <select
                                 value={move || sheet.get().race.clone()}
                                 on:change={move |ev| {
-                                    let next_race = event_target_value(&ev);
+                                    let next = event_target_value(&ev);
                                     sheet.update(|s| {
-                                        s.race = next_race.clone();
-                                        let options = specialization_options_for_race(&next_race);
-                                        if options.is_empty() {
+                                        s.race = next.clone();
+                                        if next == "Humano" {
+                                            s.specialization = "Amalgamos".to_string();
+                                        } else if next == "Áureo" {
+                                            s.specialization = "Místico".to_string();
+                                        } else if next == "Pesadelo" {
+                                            s.specialization = "Rei".to_string();
+                                        } else {
                                             s.specialization.clear();
-                                        } else if !options.iter().any(|opt| opt == &s.specialization) {
-                                            s.specialization = options[0].clone();
                                         }
                                     });
                                 }}
                             >
                                 <option value="">"Selecione"</option>
-                                {race_options().iter().map(|race| view! {
-                                    <option value={*race}>{*race}</option>
-                                }).collect_view()}
+                                <option value="Humano">"Humano"</option>
+                                <option value="Pesadelo">"Pesadelo"</option>
+                                <option value="Áureo">"Áureo"</option>
                             </select>
                         </label>
 
@@ -174,9 +139,24 @@ fn App() -> impl IntoView {
                                 on:change={move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))}
                             >
                                 <option value="">"Selecione"</option>
-                                {move || specialization_options().into_iter().map(|opt| view! {
-                                    <option value={opt.clone()}>{opt}</option>
-                                }).collect_view()}
+
+                                <Show when={move || sheet.get().race == "Humano"}>
+                                    <option value="Amalgamos">"Amalgamos"</option>
+                                    <option value="Flagelos">"Flagelos"</option>
+                                    <option value="Aplicadores">"Aplicadores"</option>
+                                    <option value="Suplícios">"Suplícios"</option>
+                                </Show>
+
+                                <Show when={move || sheet.get().race == "Áureo"}>
+                                    <option value="Místico">"Místico"</option>
+                                    <option value="Corpóreo">"Corpóreo"</option>
+                                </Show>
+
+                                <Show when={move || sheet.get().race == "Pesadelo"}>
+                                    <option value="Rei">"Rei"</option>
+                                    <option value="Dama">"Dama"</option>
+                                    <option value="Valete">"Valete"</option>
+                                </Show>
                             </select>
                         </label>
 
@@ -187,9 +167,11 @@ fn App() -> impl IntoView {
                                 on:change={move |ev| sheet.update(|s| s.community = event_target_value(&ev))}
                             >
                                 <option value="">"Selecione"</option>
-                                {community_options().iter().map(|community| view! {
-                                    <option value={*community}>{*community}</option>
-                                }).collect_view()}
+                                <option value="Pântano">"Pântano"</option>
+                                <option value="Tundra">"Tundra"</option>
+                                <option value="Cidade">"Cidade"</option>
+                                <option value="Nômade">"Nômade"</option>
+                                <option value="Deserto">"Deserto"</option>
                             </select>
                         </label>
 
@@ -200,9 +182,11 @@ fn App() -> impl IntoView {
                                 on:change={move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))}
                             >
                                 <option value="">"Selecione"</option>
-                                {class_options().iter().map(|class| view! {
-                                    <option value={*class}>{*class}</option>
-                                }).collect_view()}
+                                <option value="Médico">"Médico"</option>
+                                <option value="Artífice">"Artífice"</option>
+                                <option value="Engenheiro">"Engenheiro"</option>
+                                <option value="Magus">"Magus"</option>
+                                <option value="Cozinheiro">"Cozinheiro"</option>
                             </select>
                         </label>
 
@@ -246,24 +230,46 @@ fn App() -> impl IntoView {
 
                     <h3>"Atributos"</h3>
                     <div class="stat-grid">
-                        {labels.iter().enumerate().map(|(index, label)| {
-                            let label = *label;
-                            view! {
-                                <div class="stat">
-                                    <strong>{label}</strong>
-                                    <input
-                                        aria-label={format!("Atributo {label}")}
-                                        type="number"
-                                        prop:value={move || sheet.get().stats[index].to_string()}
-                                        on:input={move |ev| {
-                                            if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                                sheet.update(|s| s.stats[index] = v);
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            }
-                        }).collect_view()}
+                        <div class="stat">
+                            <strong>"INT"</strong>
+                            <input aria-label="Atributo INT" type="number" prop:value={move || sheet.get().stats[0].to_string()} on:input={move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                    sheet.update(|s| s.stats[0] = v);
+                                }
+                            }} />
+                        </div>
+                        <div class="stat">
+                            <strong>"FIS"</strong>
+                            <input aria-label="Atributo FIS" type="number" prop:value={move || sheet.get().stats[1].to_string()} on:input={move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                    sheet.update(|s| s.stats[1] = v);
+                                }
+                            }} />
+                        </div>
+                        <div class="stat">
+                            <strong>"DOM"</strong>
+                            <input aria-label="Atributo DOM" type="number" prop:value={move || sheet.get().stats[2].to_string()} on:input={move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                    sheet.update(|s| s.stats[2] = v);
+                                }
+                            }} />
+                        </div>
+                        <div class="stat">
+                            <strong>"VEL"</strong>
+                            <input aria-label="Atributo VEL" type="number" prop:value={move || sheet.get().stats[3].to_string()} on:input={move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                    sheet.update(|s| s.stats[3] = v);
+                                }
+                            }} />
+                        </div>
+                        <div class="stat">
+                            <strong>"HAB"</strong>
+                            <input aria-label="Atributo HAB" type="number" prop:value={move || sheet.get().stats[4].to_string()} on:input={move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                    sheet.update(|s| s.stats[4] = v);
+                                }
+                            }} />
+                        </div>
                     </div>
 
                     <h3>"Habilidades"</h3>
@@ -276,56 +282,7 @@ fn App() -> impl IntoView {
                 </Show>
 
                 <Show when={move || tab.get() == 1}>
-                    <div class="section-heading">
-                        <h2>"Inventário"</h2>
-                        <span class="pill">
-                            {move || format!("{} / {} cartas", inventory_total(), sheet.get().capacity as u16)}
-                        </span>
-                    </div>
-
-                    <label class="capacity">
-                        "Capacidade em cartas"
-                        <input type="number" min="1" max="99" prop:value={move || sheet.get().capacity.to_string()} on:input={move |ev| {
-                            if let Ok(v) = event_target_value(&ev).parse::<u8>() {
-                                sheet.update(|s| s.capacity = v.max(1));
-                            }
-                        }} />
-                    </label>
-
-                    <div class="item-list">
-                        {move || sheet.get().items.iter().cloned().enumerate().map(|(index, item)| {
-                            let item_name_value = item.name.clone();
-                            let item_condition = item.condition.clone();
-                            let item_advantage = item.advantage.clone();
-                            let item_cards = item.cards;
-                            view! {
-                                <div class="item">
-                                    <div class="item-title">
-                                        <strong>{item_name_value}</strong>
-                                        <button class="remove" on:click={move |_| {
-                                            sheet.update(|s| {
-                                                if index < s.items.len() {
-                                                    s.items.remove(index);
-                                                }
-                                            });
-                                        }}>
-                                            "Remover"
-                                        </button>
-                                    </div>
-                                    <p>{format!("Estado: {} · {} carta(s)", item_condition, item_cards)}</p>
-                                    <p class="advantage">
-                                        {if item_advantage.is_empty() {
-                                            "Sem vantagem registrada".to_string()
-                                        } else {
-                                            format!("Vantagem em teste: {}", item_advantage)
-                                        }}
-                                    </p>
-                                </div>
-                            }
-                        }).collect_view()}
-                    </div>
-
-                    <h3>"Adicionar item"</h3>
+                    <h2>"Inventário"</h2>
                     <div class="form-grid">
                         <label>
                             "Item"
@@ -339,7 +296,7 @@ fn App() -> impl IntoView {
 
                     <button class="primary" on:click={move |_| {
                         let name = item_name.get().trim().to_string();
-                        if !name.is_empty() && inventory_total() < sheet.get().capacity as u16 {
+                        if !name.is_empty() && sheet.get().items.iter().map(|i| i.cards as u16).sum::<u16>() < sheet.get().capacity as u16 {
                             let advantage = item_advantage.get();
                             sheet.update(|s| {
                                 s.items.push(Item {
@@ -356,7 +313,49 @@ fn App() -> impl IntoView {
                         "+ Adicionar carta"
                     </button>
 
-                    <p class="hint">"Nesta versão, cada item ocupa 1 carta. Bônus e estados são registros manuais."</p>
+                    <div class="item-list">
+                        {move || {
+                            let items = sheet.get();
+                            if items.items.is_empty() {
+                                view! { <p class="hint">"Nenhum item adicionado ainda."</p> }
+                            } else {
+                                view! {
+                                    <div>
+                                        {items.items.iter().enumerate().map(|(index, item)| {
+                                            let item_name_value = item.name.clone();
+                                            let item_condition = item.condition.clone();
+                                            let item_advantage = item.advantage.clone();
+                                            let item_cards = item.cards;
+                                            view! {
+                                                <div class="item">
+                                                    <div class="item-title">
+                                                        <strong>{item_name_value}</strong>
+                                                        <button class="remove" on:click={move |_| {
+                                                            sheet.update(|s| {
+                                                                if index < s.items.len() {
+                                                                    s.items.remove(index);
+                                                                }
+                                                            });
+                                                        }}>
+                                                            "Remover"
+                                                        </button>
+                                                    </div>
+                                                    <p>{format!("Estado: {} · {} carta(s)", item_condition, item_cards)}</p>
+                                                    <p class="advantage">
+                                                        {if item_advantage.is_empty() {
+                                                            "Sem vantagem registrada".to_string()
+                                                        } else {
+                                                            format!("Vantagem em teste: {}", item_advantage)
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            }
+                                        }).collect::<Vec<_>>() }
+                                    </div>
+                                }
+                            }
+                        }}
+                    </div>
                 </Show>
 
                 <Show when={move || tab.get() == 2}>
