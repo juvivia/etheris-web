@@ -24,7 +24,19 @@ input, textarea, select {
     padding: 12px;
     outline: none;
 }
-input:focus, textarea:focus { border-color: #b4d1c2; }
+input:focus, textarea:focus, select:focus {
+    border-color: #b4d1c2;
+}
+
+select {
+    cursor: pointer;
+    color-scheme: dark;
+}
+
+select:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
 .resource-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .resource-grid label { background: #1b2425; border-radius: 8px; padding: 13px; text-align: center; }
 .resource-grid input { font-size: 22px; text-align: center; border: none; background: transparent; padding: 5px; }
