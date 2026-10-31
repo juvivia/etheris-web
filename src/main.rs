@@ -31,10 +31,10 @@ impl Default for Sheet {
     fn default() -> Self {
         Self {
             name: "Novo personagem".into(),
-            race: "".into(),
-            specialization: "".into(),
-            community: "".into(),
-            class_name: "".into(),
+            race: String::new(),
+            specialization: String::new(),
+            community: String::new(),
+            class_name: String::new(),
             level: 1,
             pv: 0,
             san: 0,
@@ -42,7 +42,7 @@ impl Default for Sheet {
             stats: [0; 5],
             abilities: String::new(),
             capacity: 3,
-            items: vec![],
+            items: Vec::new(),
             notes: String::new(),
         }
     }
@@ -71,23 +71,26 @@ fn App() -> impl IntoView {
     let tab = RwSignal::new(0usize);
     let item_name = RwSignal::new(String::new());
     let item_advantage = RwSignal::new(String::new());
-    Effect::new(move |_| save_sheet(&sheet.get()));
     let labels = ["INT", "FIS", "DOM", "VEL", "HAB"];
 
-    let inventory_items = move || {
+    Effect::new(move |_| save_sheet(&sheet.get()));
+
+    let inventory_total = move || {
         sheet
             .get()
             .items
             .iter()
-            .cloned()
-            .enumerate()
-            .collect::<Vec<_>>()
+            .map(|item| item.cards as u16)
+            .sum::<u16>()
     };
 
     view! {
         <main class="shell">
             <header class="topbar">
-                <div><h1>"ETHERIS"</h1><p>"THE GAME · FICHA DE PERSONAGEM"</p></div>
+                <div>
+                    <h1>"ETHERIS"</h1>
+                    <p>"THE GAME · FICHA DE PERSONAGEM"</p>
+                </div>
                 <span class="level">"NÍVEL " {move || sheet.get().level}</span>
             </header>
 
@@ -109,92 +112,25 @@ fn App() -> impl IntoView {
                     <div class="form-grid">
                         <label>
                             "Nome"
-                            <input prop:value={move || sheet.get().name} on:input={move |ev| sheet.update(|s| s.name = event_target_value(&ev))} />
+                            <input prop:value={move || sheet.get().name.clone()} on:input={move |ev| sheet.update(|s| s.name = event_target_value(&ev))} />
                         </label>
                         <label>
-                           <label>
-   
-<label>
-    "Raça"
-    <select
-        prop:value={move || sheet.get().race.clone()}
-        on:change={move |ev| {
-            let value = event_target_value(&ev);
-            sheet.update(|s| {
-                s.race = value;
-                s.specialization.clear();
-            });
-        }}
-    >
-        <option value="">"Selecione uma raça"</option>
-        <option value="Humano">"Humano"</option>
-        <option value="Pesadelo">"Pesadelo"</option>
-        <option value="Áureo">"Áureo"</option>
-    </select>
-</label>
-
-<label>
-    "Especialização"
-    <select
-        prop:value={move || sheet.get().specialization.clone()}
-        on:change={move |ev| {
-            let value = event_target_value(&ev);
-            sheet.update(|s| s.specialization = value);
-        }}
-        prop:disabled={move || sheet.get().race.is_empty()}
-    >
-        <option value="">"Selecione uma especialização"</option>
-        {move || {
-            let options: Vec<&'static str> = match sheet.get().race.as_str() {
-                "Humano" => vec!["Amalgamos", "Flagelos", "Aplicadores", "Suplícios"],
-                "Áureo" => vec!["Místico", "Corpóreo"],
-                "Pesadelo" => vec!["Rei", "Dama", "Valete"],
-                _ => vec![],
-            };
-
-            options.into_iter().map(|specialization| view! {
-                <option value={specialization}>{specialization}</option>
-            }).collect_view()
-        }}
-    </select>
-</label>
-
-<label>
-    "Comunidade"
-    <select
-        prop:value={move || sheet.get().community.clone()}
-        on:change={move |ev| {
-            let value = event_target_value(&ev);
-            sheet.update(|s| s.community = value);
-        }}
-    >
-        <option value="">"Selecione uma comunidade"</option>
-        <option value="Pântano">"Pântano"</option>
-        <option value="Deserto">"Deserto"</option>
-        <option value="Cidade">"Cidade"</option>
-        <option value="Nômade">"Nômade"</option>
-        <option value="Tundra">"Tundra"</option>
-    </select>
-</label>
-
-<label>
-    "Classe"
-    <select
-        prop:value={move || sheet.get().class_name.clone()}
-        on:change={move |ev| {
-            let value = event_target_value(&ev);
-            sheet.update(|s| s.class_name = value);
-        }}
-    >
-        <option value="">"Selecione uma classe"</option>
-        <option value="Médico">"Médico"</option>
-        <option value="Artífice">"Artífice"</option>
-        <option value="Engenheiro">"Engenheiro"</option>
-        <option value="Magus">"Magus"</option>
-        <option value="Cozinheiro">"Cozinheiro"</option>
-    </select>
-</label>
-
+                            "Raça"
+                            <input placeholder="Raça" prop:value={move || sheet.get().race.clone()} on:input={move |ev| sheet.update(|s| s.race = event_target_value(&ev))} />
+                        </label>
+                        <label>
+                            "Especialização"
+                            <input prop:value={move || sheet.get().specialization.clone()} on:input={move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))} />
+                        </label>
+                        <label>
+                            "Comunidade"
+                            <input prop:value={move || sheet.get().community.clone()} on:input={move |ev| sheet.update(|s| s.community = event_target_value(&ev))} />
+                        </label>
+                        <label>
+                            "Classe"
+                            <input prop:value={move || sheet.get().class_name.clone()} on:input={move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))} />
+                        </label>
+                        <label>
                             "Nível"
                             <input type="number" min="1" max="10" prop:value={move || sheet.get().level.to_string()} on:input={move |ev| {
                                 if let Ok(v) = event_target_value(&ev).parse::<u8>() {
@@ -234,7 +170,7 @@ fn App() -> impl IntoView {
 
                     <h3>"Atributos"</h3>
                     <div class="stat-grid">
-                        {labels.iter().enumerate().map(|(i, label)| {
+                        {labels.iter().enumerate().map(|(index, label)| {
                             let label = *label;
                             view! {
                                 <div class="stat">
@@ -242,10 +178,10 @@ fn App() -> impl IntoView {
                                     <input
                                         aria-label={format!("Atributo {label}")}
                                         type="number"
-                                        prop:value={move || sheet.get().stats[i].to_string()}
+                                        prop:value={move || sheet.get().stats[index].to_string()}
                                         on:input={move |ev| {
                                             if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                                sheet.update(|s| s.stats[i] = v);
+                                                sheet.update(|s| s.stats[index] = v);
                                             }
                                         }}
                                     />
@@ -258,7 +194,7 @@ fn App() -> impl IntoView {
                     <textarea
                         rows="5"
                         placeholder="Habilidades de classe, especialização e comunidade..."
-                        prop:value={move || sheet.get().abilities}
+                        prop:value={move || sheet.get().abilities.clone()}
                         on:input={move |ev| sheet.update(|s| s.abilities = event_target_value(&ev))}
                     ></textarea>
                 </Show>
@@ -267,7 +203,7 @@ fn App() -> impl IntoView {
                     <div class="section-heading">
                         <h2>"Inventário"</h2>
                         <span class="pill">
-                            {move || format!("{} / {} cartas", sheet.get().items.iter().map(|i| i.cards as u16).sum::<u16>(), sheet.get().capacity as u16)}
+                            {move || format!("{} / {} cartas", inventory_total(), sheet.get().capacity as u16)}
                         </span>
                     </div>
 
@@ -281,7 +217,7 @@ fn App() -> impl IntoView {
                     </label>
 
                     <div class="item-list">
-                        {move || inventory_items().into_iter().map(|(index, item)| {
+                        {move || sheet.get().items.iter().cloned().enumerate().map(|(index, item)| {
                             let item_name_value = item.name.clone();
                             let item_condition = item.condition.clone();
                             let item_advantage = item.advantage.clone();
@@ -327,7 +263,7 @@ fn App() -> impl IntoView {
 
                     <button class="primary" on:click={move |_| {
                         let name = item_name.get().trim().to_string();
-                        if !name.is_empty() && sheet.get().items.iter().map(|i| i.cards as u16).sum::<u16>() < sheet.get().capacity as u16 {
+                        if !name.is_empty() && inventory_total() < sheet.get().capacity as u16 {
                             let advantage = item_advantage.get();
                             sheet.update(|s| {
                                 s.items.push(Item {
@@ -354,7 +290,7 @@ fn App() -> impl IntoView {
                         class="notes"
                         rows="16"
                         placeholder="Escreva aqui..."
-                        prop:value={move || sheet.get().notes}
+                        prop:value={move || sheet.get().notes.clone()}
                         on:input={move |ev| sheet.update(|s| s.notes = event_target_value(&ev))}
                     ></textarea>
                 </Show>
