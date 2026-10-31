@@ -141,10 +141,10 @@ fn App() -> impl IntoView {
                                     });
                                 }
                             >
-                                <option value="">"Selecione"</option>
-                                <option value="Humano">"Humano"</option>
-                                <option value="Pesadelo">"Pesadelo"</option>
-                                <option value="Áureo">"Áureo"</option>
+                                <option value="" selected=move || sheet.get().race.is_empty()>"Selecione"</option>
+                                <option value="Humano" selected=move || sheet.get().race == "Humano">"Humano"</option>
+                                <option value="Pesadelo" selected=move || sheet.get().race == "Pesadelo">"Pesadelo"</option>
+                                <option value="Áureo" selected=move || sheet.get().race == "Áureo">"Áureo"</option>
                             </select>
                         </label>
 
@@ -154,12 +154,15 @@ fn App() -> impl IntoView {
                                 prop:value=move || sheet.get().specialization.clone()
                                 on:change=move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))
                             >
-                                <option value="">"Selecione"</option>
+                                <option value="" selected=move || sheet.get().specialization.is_empty()>"Selecione"</option>
                                 {move || {
                                     specialization_options_for_race(&sheet.get().race)
                                         .into_iter()
-                                        .map(|opt| view! {
-                                            <option value={opt}>{opt}</option>
+                                        .map(|opt| {
+                                            let selected = sheet.get().specialization == opt;
+                                            view! {
+                                                <option value={opt} selected={selected}>{opt}</option>
+                                            }
                                         })
                                         .collect_view()
                                 }}
@@ -172,12 +175,12 @@ fn App() -> impl IntoView {
                                 prop:value=move || sheet.get().community.clone()
                                 on:change=move |ev| sheet.update(|s| s.community = event_target_value(&ev))
                             >
-                                <option value="">"Selecione"</option>
-                                <option value="Pântano">"Pântano"</option>
-                                <option value="Tundra">"Tundra"</option>
-                                <option value="Cidade">"Cidade"</option>
-                                <option value="Nômade">"Nômade"</option>
-                                <option value="Deserto">"Deserto"</option>
+                                <option value="" selected=move || sheet.get().community.is_empty()>"Selecione"</option>
+                                <option value="Pântano" selected=move || sheet.get().community == "Pântano">"Pântano"</option>
+                                <option value="Tundra" selected=move || sheet.get().community == "Tundra">"Tundra"</option>
+                                <option value="Cidade" selected=move || sheet.get().community == "Cidade">"Cidade"</option>
+                                <option value="Nômade" selected=move || sheet.get().community == "Nômade">"Nômade"</option>
+                                <option value="Deserto" selected=move || sheet.get().community == "Deserto">"Deserto"</option>
                             </select>
                         </label>
 
@@ -187,12 +190,12 @@ fn App() -> impl IntoView {
                                 prop:value=move || sheet.get().class_name.clone()
                                 on:change=move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))
                             >
-                                <option value="">"Selecione"</option>
-                                <option value="Médico">"Médico"</option>
-                                <option value="Artífice">"Artífice"</option>
-                                <option value="Engenheiro">"Engenheiro"</option>
-                                <option value="Magus">"Magus"</option>
-                                <option value="Cozinheiro">"Cozinheiro"</option>
+                                <option value="" selected=move || sheet.get().class_name.is_empty()>"Selecione"</option>
+                                <option value="Médico" selected=move || sheet.get().class_name == "Médico">"Médico"</option>
+                                <option value="Artífice" selected=move || sheet.get().class_name == "Artífice">"Artífice"</option>
+                                <option value="Engenheiro" selected=move || sheet.get().class_name == "Engenheiro">"Engenheiro"</option>
+                                <option value="Magus" selected=move || sheet.get().class_name == "Magus">"Magus"</option>
+                                <option value="Cozinheiro" selected=move || sheet.get().class_name == "Cozinheiro">"Cozinheiro"</option>
                             </select>
                         </label>
 
