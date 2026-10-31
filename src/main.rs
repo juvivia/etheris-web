@@ -65,6 +65,32 @@ fn save_sheet(sheet: &Sheet) {
     }
 }
 
+fn race_options() -> [&'static str; 3] {
+    ["Humano", "Pesadelo", "Áureo"]
+}
+
+fn community_options() -> [&'static str; 5] {
+    ["Pântano", "Tundra", "Cidade", "Nômade", "Deserto"]
+}
+
+fn class_options() -> [&'static str; 5] {
+    ["Médico", "Artífice", "Engenheiro", "Magus", "Cozinheiro"]
+}
+
+fn specialization_options_for_race(race: &str) -> Vec<String> {
+    match race {
+        "Humano" => vec![
+            "Amalgamos".to_string(),
+            "Flagelos".to_string(),
+            "Aplicadores".to_string(),
+            "Suplícios".to_string(),
+        ],
+        "Áureo" => vec!["Místico".to_string(), "Corpóreo".to_string()],
+        "Pesadelo" => vec!["Rei".to_string(), "Dama".to_string(), "Valete".to_string()],
+        _ => Vec::new(),
+    }
+}
+
 #[component]
 fn App() -> impl IntoView {
     let sheet = RwSignal::new(load_sheet());
@@ -83,6 +109,8 @@ fn App() -> impl IntoView {
             .map(|item| item.cards as u16)
             .sum::<u16>()
     };
+
+    let specialization_options = move || specialization_options_for_race(&sheet.get().race);
 
     view! {
         <main class="shell">
@@ -114,22 +142,70 @@ fn App() -> impl IntoView {
                             "Nome"
                             <input prop:value={move || sheet.get().name.clone()} on:input={move |ev| sheet.update(|s| s.name = event_target_value(&ev))} />
                         </label>
+
                         <label>
                             "Raça"
-                            <input placeholder="Raça" prop:value={move || sheet.get().race.clone()} on:input={move |ev| sheet.update(|s| s.race = event_target_value(&ev))} />
+                            <select
+                                value={move || sheet.get().race.clone()}
+                                on:change={move |ev| {
+                                    let next_race = event_target_value(&ev);
+                                    sheet.update(|s| {
+                                        s.race = next_race.clone();
+                                        let options = specialization_options_for_race(&next_race);
+                                        if options.is_empty() {
+                                            s.specialization.clear();
+                                        } else if !options.iter().any(|opt| opt == &s.specialization) {
+                                            s.specialization = options[0].clone();
+                                        }
+                                    });
+                                }}
+                            >
+                                <option value="">"Selecione"</option>
+                                {race_options().iter().map(|race| view! {
+                                    <option value={*race}>{*race}</option>
+                                }).collect_view()}
+                            </select>
                         </label>
+
                         <label>
                             "Especialização"
-                            <input prop:value={move || sheet.get().specialization.clone()} on:input={move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))} />
+                            <select
+                                value={move || sheet.get().specialization.clone()}
+                                on:change={move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))}
+                            >
+                                <option value="">"Selecione"</option>
+                                {move || specialization_options().into_iter().map(|opt| view! {
+                                    <option value={opt.clone()}>{opt}</option>
+                                }).collect_view()}
+                            </select>
                         </label>
+
                         <label>
                             "Comunidade"
-                            <input prop:value={move || sheet.get().community.clone()} on:input={move |ev| sheet.update(|s| s.community = event_target_value(&ev))} />
+                            <select
+                                value={move || sheet.get().community.clone()}
+                                on:change={move |ev| sheet.update(|s| s.community = event_target_value(&ev))}
+                            >
+                                <option value="">"Selecione"</option>
+                                {community_options().iter().map(|community| view! {
+                                    <option value={*community}>{*community}</option>
+                                }).collect_view()}
+                            </select>
                         </label>
+
                         <label>
                             "Classe"
-                            <input prop:value={move || sheet.get().class_name.clone()} on:input={move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))} />
+                            <select
+                                value={move || sheet.get().class_name.clone()}
+                                on:change={move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))}
+                            >
+                                <option value="">"Selecione"</option>
+                                {class_options().iter().map(|class| view! {
+                                    <option value={*class}>{*class}</option>
+                                }).collect_view()}
+                            </select>
                         </label>
+
                         <label>
                             "Nível"
                             <input type="number" min="1" max="10" prop:value={move || sheet.get().level.to_string()} on:input={move |ev| {
