@@ -112,22 +112,74 @@ fn App() -> impl IntoView {
                             <input prop:value={move || sheet.get().name} on:input={move |ev| sheet.update(|s| s.name = event_target_value(&ev))} />
                         </label>
                         <label>
-                            "Raça"
-                            <input placeholder="Raça" prop:value={move || sheet.get().race} on:input={move |ev| sheet.update(|s| s.race = event_target_value(&ev))} />
-                        </label>
-                        <label>
-                            "Especialização"
-                            <input prop:value={move || sheet.get().specialization} on:input={move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))} />
-                        </label>
-                        <label>
-                            "Comunidade"
-                            <input prop:value={move || sheet.get().community} on:input={move |ev| sheet.update(|s| s.community = event_target_value(&ev))} />
-                        </label>
-                        <label>
-                            "Classe"
-                            <input prop:value={move || sheet.get().class_name} on:input={move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))} />
-                        </label>
-                        <label>
+                           <label>
+    "Raça"
+    <select
+        prop:value={move || sheet.get().race.clone()}
+        on:change={move |ev| {
+            let race = event_target_value(&ev);
+            sheet.update(|s| {
+                s.race = race;
+                s.specialization.clear();
+            });
+        }}
+    >
+        <option value="">"Selecione uma raça"</option>
+        <option value="Humano">"Humano"</option>
+        <option value="Pesadelo">"Pesadelo"</option>
+        <option value="Áureo">"Áureo"</option>
+    </select>
+</label>
+                       <label>
+    "Especialização"
+    <select
+        prop:value={move || sheet.get().specialization.clone()}
+        on:change={move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))}
+        prop:disabled={move || sheet.get().race.is_empty()}
+    >
+        <option value="">"Selecione uma especialização"</option>
+        {move || {
+            let options: Vec<&'static str> = match sheet.get().race.as_str() {
+                "Humano" => vec!["Amalgamos", "Flagelos", "Aplicadores", "Suplícios"],
+                "Áureo" => vec!["Místico", "Corpóreo"],
+                "Pesadelo" => vec!["Rei", "Dama", "Valete"],
+                _ => vec![],
+            };
+
+            options.into_iter().map(|specialization| view! {
+                <option value={specialization}>{specialization}</option>
+            }).collect_view()
+        }}
+    </select>
+</label>
+                           <label>
+    "Comunidade"
+    <select
+        prop:value={move || sheet.get().community.clone()}
+        on:change={move |ev| sheet.update(|s| s.community = event_target_value(&ev))}
+    >
+        <option value="">"Selecione uma comunidade"</option>
+        <option value="Pântano">"Pântano"</option>
+        <option value="Deserto">"Deserto"</option>
+        <option value="Cidade">"Cidade"</option>
+        <option value="Nômade">"Nômade"</option>
+        <option value="Tundra">"Tundra"</option>
+    </select>
+</label>
+                            <label>
+    "Classe"
+    <select
+        prop:value={move || sheet.get().class_name.clone()}
+        on:change={move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))}
+    >
+        <option value="">"Selecione uma classe"</option>
+        <option value="Médico">"Médico"</option>
+        <option value="Artífice">"Artífice"</option>
+        <option value="Engenheiro">"Engenheiro"</option>
+        <option value="Magus">"Magus"</option>
+        <option value="Cozinheiro">"Cozinheiro"</option>
+    </select>
+</label>
                             "Nível"
                             <input type="number" min="1" max="10" prop:value={move || sheet.get().level.to_string()} on:input={move |ev| {
                                 if let Ok(v) = event_target_value(&ev).parse::<u8>() {
