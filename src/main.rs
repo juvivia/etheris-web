@@ -81,64 +81,62 @@ fn App() -> impl IntoView {
 
     Effect::new(move |_| save_sheet(&sheet.get()));
 
-    let skill_items = move || {
-        sheet
-            .get()
-            .abilities
-            .lines()
-            .map(str::trim)
-            .filter(|skill| !skill.is_empty())
-            .filter_map(|skill| {
-                if let Some((name, description)) = skill.split_once("::") {
-                    let name = name.trim();
-                    let description = decode_skill_description(description.trim());
-                    if name.is_empty() {
-                        None
-                    } else {
-                        Some((name.to_string(), description.to_string()))
-                    }
+   
+let skill_items = move || {
+    let raw = sheet.get().abilities;
+
+    // Primeiro tenta ler o formato novo (JSON).
+    if let Ok(items) = serde_json::from_str::<Vec<(String, String)>>(&raw) {
+        return items;
+    }
+
+    // Se não for JSON, tenta ler o formato antigo.
+    raw.lines()
+        .map(str::trim)
+        .filter(|skill| !skill.is_empty())
+        .filter_map(|skill| {
+            if let Some((name, description)) = skill.split_once("::") {
+                let name = name.trim();
+
+                if name.is_empty() {
+                    None
                 } else {
-                    let skill = skill.trim();
-                    if skill.is_empty() {
-                        None
-                    } else {
-                        Some((skill.to_string(), String::new()))
-                    }
+                    Some((
+                        name.to_string(),
+                        decode_skill_description(description.trim()),
+                    ))
                 }
-            })
-            .collect::<Vec<_>>()
-    };
+            } else {
+                Some((skill.to_string(), String::new()))
+            }
+        })
+        .collect::<Vec<_>>()
+};
+    
+let add_skill = move |_| {
+    let name = skill_name.get().trim().to_string();
+    let description = skill_description.get().trim().to_string();
 
-    let add_skill = move |_| {
-        let name = skill_name.get().trim().to_string();
-        let description = encode_skill_description(skill_description.get().trim());
+    if name.is_empty() {
+        return;
+    }
 
-        if name.is_empty() {
-            return;
-        }
+    let mut items = skill_items();
 
-        let mut items = skill_items();
-        if !items.iter().any(|(existing_name, _)| existing_name.eq_ignore_ascii_case(&name)) {
-            items.push((name.clone(), description.clone()));
-        }
+    if !items.iter().any(|(existing_name, _)| {
+        existing_name.eq_ignore_ascii_case(&name)
+    }) {
+        items.push((name, description));
+    }
 
-        sheet.update(|s| {
-            s.abilities = items
-                .iter()
-                .map(|(item_name, item_description)| {
-                    if item_description.is_empty() {
-                        item_name.clone()
-                    } else {
-                        format!("{}::{}", item_name, item_description)
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
-        });
+    sheet.update(|s| {
+        s.abilities = serde_json::to_string(&items).unwrap_or_default();
+    });
 
-        skill_name.set(String::new());
-        skill_description.set(String::new());
-    };
+    skill_name.set(String::new());
+    skill_description.set(String::new());
+};
+
 
     let remove_skill = move |skill_to_remove: String| {
         let items = skill_items()
