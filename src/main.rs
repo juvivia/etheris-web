@@ -64,6 +64,14 @@ fn specialization_options_for_race(race: &str) -> Vec<&'static str> {
     }
 }
 
+fn encode_skill_description(description: &str) -> String {
+    description.replace('\n', "\\n")
+}
+
+fn decode_skill_description(description: &str) -> String {
+    description.replace("\\n", "\n")
+}
+
 #[component]
 fn App() -> impl IntoView {
     let sheet = RwSignal::new(load_sheet());
@@ -83,7 +91,7 @@ fn App() -> impl IntoView {
             .filter_map(|skill| {
                 if let Some((name, description)) = skill.split_once("::") {
                     let name = name.trim();
-                    let description = description.trim();
+                    let description = decode_skill_description(description.trim());
                     if name.is_empty() {
                         None
                     } else {
@@ -103,7 +111,7 @@ fn App() -> impl IntoView {
 
     let add_skill = move |_| {
         let name = skill_name.get().trim().to_string();
-        let description = skill_description.get().trim().to_string();
+        let description = encode_skill_description(skill_description.get().trim());
 
         if name.is_empty() {
             return;
