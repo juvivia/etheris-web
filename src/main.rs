@@ -207,6 +207,15 @@ fn App() -> impl IntoView {
         }
     };
 
+    let auto_resize_skill_description = move |ev: web_sys::Event| {
+        let textarea = event_target::<web_sys::HtmlTextAreaElement>(&ev);
+        textarea.style.set_property("height", "auto");
+        let min_height = 52u32;
+        let height = textarea.scroll_height().max(min_height);
+        textarea.style.set_property("height", &format!("{}px", height));
+        skill_description.set(event_target_value(&ev));
+    };
+
     view! {
         <main class="shell">
             <header class="topbar">
@@ -326,21 +335,24 @@ fn App() -> impl IntoView {
 
                     <h3>"Habilidades"</h3>
                     <div class="skill-field">
-                        <div class="skill-input-row">
+                        <div class="skill-form">
                             <input
                                 class="skill-input"
                                 placeholder="Nome da habilidade"
                                 prop:value=move || skill_name.get()
                                 on:input=move |ev| skill_name.set(event_target_value(&ev))
                             />
-                            <textarea
-                                class="skill-input skill-description-input"
-                                rows="3"
-                                placeholder="Descrição"
-                                prop:value=move || skill_description.get()
-                                on:input=move |ev| skill_description.set(event_target_value(&ev))
-                            ></textarea>
-                            <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
+
+                            <div class="skill-description-row">
+                                <textarea
+                                    class="skill-input skill-description-input"
+                                    rows="1"
+                                    placeholder="Descrição"
+                                    prop:value=move || skill_description.get()
+                                    on:input=move |ev| auto_resize_skill_description(ev)
+                                ></textarea>
+                                <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
+                            </div>
                         </div>
 
                         <div class="skill-list">
