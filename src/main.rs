@@ -209,10 +209,10 @@ fn App() -> impl IntoView {
 
     let auto_resize_skill_description = move |ev: web_sys::Event| {
         let textarea = event_target::<web_sys::HtmlTextAreaElement>(&ev);
-        textarea.style.set_property("height", "auto");
-        let min_height = 52u32;
+        textarea.style().set_property("height", "auto");
+        let min_height: u32 = 52;
         let height = textarea.scroll_height().max(min_height);
-        textarea.style.set_property("height", &format!("{}px", height));
+        textarea.style().set_property("height", &format!("{}px", height));
         skill_description.set(event_target_value(&ev));
     };
 
