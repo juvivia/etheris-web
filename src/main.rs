@@ -2,14 +2,6 @@ use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
-struct Item {
-    name: String,
-    condition: String,
-    advantage: String,
-    cards: u8,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
 struct Sheet {
     name: String,
     race: String,
@@ -23,7 +15,6 @@ struct Sheet {
     stats: [i32; 5],
     abilities: String,
     capacity: u8,
-    items: Vec<Item>,
     notes: String,
 }
 
@@ -42,7 +33,6 @@ impl Default for Sheet {
             stats: [0; 5],
             abilities: String::new(),
             capacity: 3,
-            items: Vec::new(),
             notes: String::new(),
         }
     }
@@ -78,21 +68,10 @@ fn specialization_options_for_race(race: &str) -> Vec<&'static str> {
 fn App() -> impl IntoView {
     let sheet = RwSignal::new(load_sheet());
     let tab = RwSignal::new(0usize);
-    let item_name = RwSignal::new(String::new());
-    let item_advantage = RwSignal::new(String::new());
     let skill_name = RwSignal::new(String::new());
     let skill_description = RwSignal::new(String::new());
 
     Effect::new(move |_| save_sheet(&sheet.get()));
-
-    let inventory_total = move || {
-        sheet
-            .get()
-            .items
-            .iter()
-            .map(|item| item.cards as u16)
-            .sum::<u16>()
-    };
 
     let skill_items = move || {
         sheet
@@ -174,53 +153,51 @@ fn App() -> impl IntoView {
         });
     };
 
-   
-let render_skill_list = move || {
-    let items = skill_items();
+    let render_skill_list = move || {
+        let items = skill_items();
 
-    if items.is_empty() {
-        view! {
-            <p class="skill-empty">"Nenhuma habilidade adicionada."</p>
-        }
-        .into_any()
-    } else {
-        view! {
-            <div class="item-list">
-                {items.into_iter().map(|(skill_title, skill_text)| {
-                    let skill_title_clone = skill_title.clone();
+        if items.is_empty() {
+            view! {
+                <p class="skill-empty">"Nenhuma habilidade adicionada."</p>
+            }
+            .into_any()
+        } else {
+            view! {
+                <div class="item-list">
+                    {items.into_iter().map(|(skill_title, skill_text)| {
+                        let skill_title_clone = skill_title.clone();
 
-                    view! {
-                        <div class="item">
-                            <div class="item-title">
-                                <strong>{skill_title}</strong>
+                        view! {
+                            <div class="item">
+                                <div class="item-title">
+                                    <strong>{skill_title}</strong>
 
-                                <button
-                                    type="button"
-                                    class="remove"
-                                    on:click=move |_| {
-                                        remove_skill(skill_title_clone.clone());
-                                    }
-                                >
-                                    "Remover"
-                                </button>
+                                    <button
+                                        type="button"
+                                        class="remove"
+                                        on:click=move |_| {
+                                            remove_skill(skill_title_clone.clone());
+                                        }
+                                    >
+                                        "Remover"
+                                    </button>
+                                </div>
+
+                                <p>
+                                    {if skill_text.is_empty() {
+                                        "Nenhuma descrição registrada.".to_string()
+                                    } else {
+                                        skill_text
+                                    }}
+                                </p>
                             </div>
-
-                            <p>
-                                {if skill_text.is_empty() {
-                                    "Nenhuma descrição registrada.".to_string()
-                                } else {
-                                    skill_text
-                                }}
-                            </p>
-                        </div>
-                    }
-                }).collect_view()}
-            </div>
+                        }
+                    }).collect_view()}
+                </div>
+            }
+            .into_any()
         }
-        .into_any()
-    }
-};
-
+    };
 
     view! {
         <main class="shell">
@@ -237,7 +214,7 @@ let render_skill_list = move || {
                     "Personagem"
                 </button>
                 <button class:active=move || tab.get() == 1 on:click=move |_| tab.set(1)>
-                    "Inventário"
+                    "Atributos"
                 </button>
                 <button class:active=move || tab.get() == 2 on:click=move |_| tab.set(2)>
                     "Anotações"
@@ -339,6 +316,33 @@ let render_skill_list = move || {
                         </label>
                     </div>
 
+                    <h3>"Habilidades"</h3>
+                    <div class="skill-field">
+                        <div class="skill-input-row">
+                            <input
+                                class="skill-input"
+                                placeholder="Nome da habilidade"
+                                prop:value=move || skill_name.get()
+                                on:input=move |ev| skill_name.set(event_target_value(&ev))
+                            />
+                            <input
+                                class="skill-input skill-description-input"
+                                placeholder="Descrição"
+                                prop:value=move || skill_description.get()
+                                on:input=move |ev| skill_description.set(event_target_value(&ev))
+                            />
+                            <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
+                        </div>
+
+                        <div class="skill-list">
+                            {render_skill_list}
+                        </div>
+                    </div>
+                </Show>
+
+                <Show when=move || tab.get() == 1>
+                    <h2>"Atributos"</h2>
+
                     <h3>"Recursos"</h3>
                     <div class="resource-grid">
                         <label>
@@ -410,103 +414,6 @@ let render_skill_list = move || {
                             } />
                         </div>
                     </div>
-
-                    <h3>"Habilidades"</h3>
-                    <div class="skill-field">
-                        <div class="skill-input-row">
-                            <input
-                                class="skill-input"
-                                placeholder="Nome da habilidade"
-                                prop:value=move || skill_name.get()
-                                on:input=move |ev| skill_name.set(event_target_value(&ev))
-                            />
-                            <input
-                                class="skill-input skill-description-input"
-                                placeholder="Descrição"
-                                prop:value=move || skill_description.get()
-                                on:input=move |ev| skill_description.set(event_target_value(&ev))
-                            />
-                            <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
-                        </div>
-
-                        <div class="skill-list">
-                            {render_skill_list}
-                        </div>
-                    </div>
-                </Show>
-
-                <Show when=move || tab.get() == 1>
-                    <h2>"Inventário"</h2>
-                    <div class="form-grid">
-                        <label>
-                            "Item"
-                            <input placeholder="Nome do item" prop:value=move || item_name.get() on:input=move |ev| item_name.set(event_target_value(&ev)) />
-                        </label>
-                        <label>
-                            "Vantagem em teste (opcional)"
-                            <input placeholder="Ex.: Pontaria" prop:value=move || item_advantage.get() on:input=move |ev| item_advantage.set(event_target_value(&ev)) />
-                        </label>
-                    </div>
-
-                    <button class="primary" on:click=move |_| {
-                        let name = item_name.get().trim().to_string();
-                        if !name.is_empty() && inventory_total() < sheet.get().capacity as u16 {
-                            let advantage = item_advantage.get();
-                            sheet.update(|s| {
-                                s.items.push(Item {
-                                    name,
-                                    condition: "Íntegro".into(),
-                                    advantage,
-                                    cards: 1,
-                                });
-                            });
-                            item_name.set(String::new());
-                            item_advantage.set(String::new());
-                        }
-                    }>
-                        "+ Adicionar carta"
-                    </button>
-
-                    <Show when=move || sheet.get().items.is_empty()>
-                        <p class="hint">"Nenhum item adicionado ainda."</p>
-                    </Show>
-
-                    <Show when=move || !sheet.get().items.is_empty()>
-                        <div class="item-list">
-                            {move || {
-                                sheet.get().items.iter().enumerate().map(|(index, item)| {
-                                    let item_name_value = item.name.clone();
-                                    let item_condition = item.condition.clone();
-                                    let item_advantage = item.advantage.clone();
-                                    let item_cards = item.cards;
-                                    view! {
-                                        <div class="item">
-                                            <div class="item-title">
-                                                <strong>{item_name_value}</strong>
-                                                <button class="remove" on:click=move |_| {
-                                                    sheet.update(|s| {
-                                                        if index < s.items.len() {
-                                                            s.items.remove(index);
-                                                        }
-                                                    });
-                                                }>
-                                                    "Remover"
-                                                </button>
-                                            </div>
-                                            <p>{format!("Estado: {} · {} carta(s)", item_condition, item_cards)}</p>
-                                            <p class="advantage">
-                                                {if item_advantage.is_empty() {
-                                                    "Sem vantagem registrada".to_string()
-                                                } else {
-                                                    format!("Vantagem em teste: {}", item_advantage)
-                                                }}
-                                            </p>
-                                        </div>
-                                    }
-                                }).collect_view()
-                            }}
-                        </div>
-                    </Show>
                 </Show>
 
                 <Show when=move || tab.get() == 2>
