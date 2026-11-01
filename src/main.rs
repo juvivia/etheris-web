@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 struct Item {
     name: String,
+    description: String,
+    weight: u8,
     condition: String,
-    advantage: String,
     cards: u8,
 }
 
@@ -79,7 +80,8 @@ fn App() -> impl IntoView {
     let sheet = RwSignal::new(load_sheet());
     let tab = RwSignal::new(0usize);
     let item_name = RwSignal::new(String::new());
-    let item_advantage = RwSignal::new(String::new());
+    let item_description = RwSignal::new(String::new());
+    let item_weight = RwSignal::new(1u8);
 
     Effect::new(move |_| save_sheet(&sheet.get()));
 
@@ -298,28 +300,50 @@ fn App() -> impl IntoView {
                             <input placeholder="Nome do item" prop:value=move || item_name.get() on:input=move |ev| item_name.set(event_target_value(&ev)) />
                         </label>
                         <label>
-                            "Vantagem em teste (opcional)"
-                            <input placeholder="Ex.: Pontaria" prop:value=move || item_advantage.get() on:input=move |ev| item_advantage.set(event_target_value(&ev)) />
+                            "Descrição"
+                            <textarea
+                                rows="2"
+                                placeholder="Descreva o item"
+                                prop:value=move || item_description.get()
+                                on:input=move |ev| item_description.set(event_target_value(&ev))
+                            ></textarea>
+                        </label>
+                        <label>
+                            "Peso"
+                            <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                prop:value=move || item_weight.get().to_string()
+                                on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<u8>() {
+                                        item_weight.set(v.clamp(1, 10));
+                                    }
+                                }
+                            />
                         </label>
                     </div>
 
                     <button class="primary" on:click=move |_| {
                         let name = item_name.get().trim().to_string();
                         if !name.is_empty() && inventory_total() < sheet.get().capacity as u16 {
-                            let advantage = item_advantage.get();
+                            let description = item_description.get();
+                            let weight = item_weight.get();
                             sheet.update(|s| {
                                 s.items.push(Item {
                                     name,
+                                    description,
+                                    weight,
                                     condition: "Íntegro".into(),
-                                    advantage,
                                     cards: 1,
                                 });
                             });
                             item_name.set(String::new());
-                            item_advantage.set(String::new());
+                            item_description.set(String::new());
+                            item_weight.set(1);
                         }
                     }>
-                        "+ Adicionar carta"
+                        "+ Adicionar item"
                     </button>
 
                     <Show when=move || sheet.get().items.is_empty()>
@@ -331,8 +355,9 @@ fn App() -> impl IntoView {
                             {move || {
                                 sheet.get().items.iter().enumerate().map(|(index, item)| {
                                     let item_name_value = item.name.clone();
+                                    let item_description_value = item.description.clone();
+                                    let item_weight_value = item.weight;
                                     let item_condition = item.condition.clone();
-                                    let item_advantage = item.advantage.clone();
                                     let item_cards = item.cards;
                                     view! {
                                         <div class="item">
@@ -348,12 +373,12 @@ fn App() -> impl IntoView {
                                                     "Remover"
                                                 </button>
                                             </div>
-                                            <p>{format!("Estado: {} · {} carta(s)", item_condition, item_cards)}</p>
+                                            <p>{format!("Peso: {} · Estado: {} · {} carta(s)", item_weight_value, item_condition, item_cards)}</p>
                                             <p class="advantage">
-                                                {if item_advantage.is_empty() {
-                                                    "Sem vantagem registrada".to_string()
+                                                {if item_description_value.is_empty() {
+                                                    "Sem descrição registrada".to_string()
                                                 } else {
-                                                    format!("Vantagem em teste: {}", item_advantage)
+                                                    item_description_value
                                                 }}
                                             </p>
                                         </div>
