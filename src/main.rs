@@ -207,15 +207,6 @@ fn App() -> impl IntoView {
         }
     };
 
-    let auto_resize_skill_description = move |ev: web_sys::Event| {
-        let textarea = event_target::<web_sys::HtmlTextAreaElement>(&ev);
-        textarea.style().set_property("height", "auto");
-        let min_height: u32 = 52;
-        let height = textarea.scroll_height().max(min_height);
-        textarea.style().set_property("height", &format!("{}px", height));
-        skill_description.set(event_target_value(&ev));
-    };
-
     view! {
         <main class="shell">
             <header class="topbar">
@@ -349,7 +340,7 @@ fn App() -> impl IntoView {
                                     rows="1"
                                     placeholder="Descrição"
                                     prop:value=move || skill_description.get()
-                                    on:input=move |ev| auto_resize_skill_description(ev)
+                                    on:input=move |ev| skill_description.set(event_target_value(&ev))
                                 ></textarea>
                                 <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
                             </div>
