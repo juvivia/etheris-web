@@ -137,27 +137,17 @@ let add_skill = move |_| {
     skill_description.set(String::new());
 };
 
+let remove_skill = move |skill_to_remove: String| {
+    let items = skill_items()
+        .into_iter()
+        .filter(|(name, _)| name != &skill_to_remove)
+        .collect::<Vec<_>>();
 
-    let remove_skill = move |skill_to_remove: String| {
-        let items = skill_items()
-            .into_iter()
-            .filter(|(name, _)| name != &skill_to_remove)
-            .collect::<Vec<_>>();
+    sheet.update(|s| {
+        s.abilities = serde_json::to_string(&items).unwrap_or_default();
+    });
+};
 
-        sheet.update(|s| {
-            s.abilities = items
-                .iter()
-                .map(|(item_name, item_description)| {
-                    if item_description.is_empty() {
-                        item_name.clone()
-                    } else {
-                        format!("{}::{}", item_name, item_description)
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
-        });
-    };
 
     let render_skill_list = move || {
         let items = skill_items();
@@ -335,7 +325,7 @@ let add_skill = move |_| {
                             <div class="skill-description-row">
                                 <textarea
                                     class="skill-input skill-description-input"
-                                    rows="1"
+                                    rows="3"
                                     placeholder="Descrição"
                                     prop:value=move || skill_description.get()
                                     on:input=move |ev| skill_description.set(event_target_value(&ev))
