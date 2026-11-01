@@ -80,7 +80,8 @@ fn App() -> impl IntoView {
     let tab = RwSignal::new(0usize);
     let item_name = RwSignal::new(String::new());
     let item_advantage = RwSignal::new(String::new());
-    let skill_input = RwSignal::new(String::new());
+    let skill_name = RwSignal::new(String::new());
+    let skill_description = RwSignal::new(String::new());
 
     Effect::new(move |_| save_sheet(&sheet.get()));
 
@@ -100,32 +101,77 @@ fn App() -> impl IntoView {
             .lines()
             .map(str::trim)
             .filter(|skill| !skill.is_empty())
-            .map(str::to_string)
+            .filter_map(|skill| {
+                if let Some((name, description)) = skill.split_once("::") {
+                    let name = name.trim();
+                    let description = description.trim();
+                    if name.is_empty() {
+                        None
+                    } else {
+                        Some((name.to_string(), description.to_string()))
+                    }
+                } else {
+                    let skill = skill.trim();
+                    if skill.is_empty() {
+                        None
+                    } else {
+                        Some((skill.to_string(), String::new()))
+                    }
+                }
+            })
             .collect::<Vec<_>>()
     };
 
     let add_skill = move |_| {
-        let skill = skill_input.get().trim().to_string();
-        if skill.is_empty() {
+        let name = skill_name.get().trim().to_string();
+        let description = skill_description.get().trim().to_string();
+
+        if name.is_empty() {
             return;
         }
 
         let mut items = skill_items();
-        if !items.iter().any(|existing| existing.eq_ignore_ascii_case(&skill)) {
-            items.push(skill.clone());
+        if !items.iter().any(|(existing_name, _)| existing_name.eq_ignore_ascii_case(&name)) {
+            items.push((name.clone(), description.clone()));
         }
 
-        sheet.update(|s| s.abilities = items.join("\n"));
-        skill_input.set(String::new());
+        sheet.update(|s| {
+            s.abilities = items
+                .iter()
+                .map(|(item_name, item_description)| {
+                    if item_description.is_empty() {
+                        item_name.clone()
+                    } else {
+                        format!("{}::{}", item_name, item_description)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+        });
+
+        skill_name.set(String::new());
+        skill_description.set(String::new());
     };
 
     let remove_skill = move |skill_to_remove: String| {
         let items = skill_items()
             .into_iter()
-            .filter(|skill| skill != &skill_to_remove)
+            .filter(|(name, _)| name != &skill_to_remove)
             .collect::<Vec<_>>();
 
-        sheet.update(|s| s.abilities = items.join("\n"));
+        sheet.update(|s| {
+            s.abilities = items
+                .iter()
+                .map(|(item_name, item_description)| {
+                    if item_description.is_empty() {
+                        item_name.clone()
+                    } else {
+                        format!("{}::{}", item_name, item_description)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+        });
     };
 
     let render_skill_list = move || {
@@ -139,12 +185,18 @@ fn App() -> impl IntoView {
         } else {
             view! {
                 <div class="skill-badges">
-                    {items.into_iter().map(|skill| {
-                        let skill_clone = skill.clone();
+                    {items.into_iter().map(|(skill_title, skill_text)| {
+                        let skill_title_clone = skill_title.clone();
+                        let skill_text_clone = skill_text.clone();
                         view! {
                             <span class="skill-badge">
-                                <span>{skill}</span>
-                                <button type="button" class="skill-remove" on:click=move |_| remove_skill(skill_clone.clone())>"×"</button>
+                                <span class="skill-main-text">{skill_title}</span>
+                                {if skill_text.is_empty() {
+                                    view! { <span class="skill-desc-hidden"></span> }.into_any()
+                                } else {
+                                    view! { <span class="skill-description">{skill_text}</span> }.into_any()
+                                }}
+                                <button type="button" class="skill-remove" on:click=move |_| remove_skill(skill_title_clone.clone())>"×"</button>
                             </span>
                         }
                     }).collect_view()}
@@ -348,9 +400,15 @@ fn App() -> impl IntoView {
                         <div class="skill-input-row">
                             <input
                                 class="skill-input"
-                                placeholder="Adicionar habilidade"
-                                prop:value=move || skill_input.get()
-                                on:input=move |ev| skill_input.set(event_target_value(&ev))
+                                placeholder="Nome da habilidade"
+                                prop:value=move || skill_name.get()
+                                on:input=move |ev| skill_name.set(event_target_value(&ev))
+                            />
+                            <input
+                                class="skill-input skill-description-input"
+                                placeholder="Descrição"
+                                prop:value=move || skill_description.get()
+                                on:input=move |ev| skill_description.set(event_target_value(&ev))
                             />
                             <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
                         </div>
