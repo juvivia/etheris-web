@@ -128,6 +128,32 @@ fn App() -> impl IntoView {
         sheet.update(|s| s.abilities = items.join("\n"));
     };
 
+    let render_skill_list = move || {
+        let items = skill_items();
+
+        if items.is_empty() {
+            view! {
+                <p class="skill-empty">"Nenhuma habilidade adicionada."</p>
+            }
+            .into_any()
+        } else {
+            view! {
+                <div class="skill-badges">
+                    {items.into_iter().map(|skill| {
+                        let skill_clone = skill.clone();
+                        view! {
+                            <span class="skill-badge">
+                                <span>{skill}</span>
+                                <button type="button" class="skill-remove" on:click=move |_| remove_skill(skill_clone.clone())>"×"</button>
+                            </span>
+                        }
+                    }).collect_view()}
+                </div>
+            }
+            .into_any()
+        }
+    };
+
     view! {
         <main class="shell">
             <header class="topbar">
@@ -330,26 +356,7 @@ fn App() -> impl IntoView {
                         </div>
 
                         <div class="skill-list">
-                            {move || {
-                                let items = skill_items();
-                                if items.is_empty() {
-                                    view! { <p class="skill-empty">"Nenhuma habilidade adicionada."</p> }
-                                } else {
-                                    view! {
-                                        <div class="skill-badges">
-                                            {items.into_iter().map(|skill| {
-                                                let skill_clone = skill.clone();
-                                                view! {
-                                                    <span class="skill-badge">
-                                                        <span>{skill}</span>
-                                                        <button type="button" class="skill-remove" on:click=move |_| remove_skill(skill_clone.clone())>"×"</button>
-                                                    </span>
-                                                }
-                                            }).collect_view()}
-                                        </div>
-                                    }
-                                }
-                            }}
+                            {render_skill_list}
                         </div>
                     </div>
                 </Show>
