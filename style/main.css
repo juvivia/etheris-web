@@ -94,6 +94,7 @@ footer { border-top: 1px solid #30383e; padding-top: 20px; }
 
 .skill-list .item p {
     line-height: 1.5;
+    white-space: pre-wrap;
 }
 
 .skill-empty {
