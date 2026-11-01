@@ -325,12 +325,13 @@ fn App() -> impl IntoView {
                                 prop:value=move || skill_name.get()
                                 on:input=move |ev| skill_name.set(event_target_value(&ev))
                             />
-                            <input
+                            <textarea
                                 class="skill-input skill-description-input"
+                                rows="3"
                                 placeholder="Descrição"
                                 prop:value=move || skill_description.get()
                                 on:input=move |ev| skill_description.set(event_target_value(&ev))
-                            />
+                            ></textarea>
                             <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
                         </div>
 
