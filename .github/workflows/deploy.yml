@@ -35,8 +35,11 @@ jobs:
         uses: jetli/trunk-action@v0.5.1
         with:
           version: latest
-
+          
       - name: Build website
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
         run: trunk build --release --public-url /etheris-web/
 
       - name: Configure Pages
