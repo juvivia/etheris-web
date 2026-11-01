@@ -174,37 +174,53 @@ fn App() -> impl IntoView {
         });
     };
 
-    let render_skill_list = move || {
-        let items = skill_items();
+   
+let render_skill_list = move || {
+    let items = skill_items();
 
-        if items.is_empty() {
-            view! {
-                <p class="skill-empty">"Nenhuma habilidade adicionada."</p>
-            }
-            .into_any()
-        } else {
-            view! {
-                <div class="skill-badges">
-                    {items.into_iter().map(|(skill_title, skill_text)| {
-                        let skill_title_clone = skill_title.clone();
-                        let skill_text_clone = skill_text.clone();
-                        view! {
-                            <span class="skill-badge">
-                                <span class="skill-main-text">{skill_title}</span>
-                                {if skill_text.is_empty() {
-                                    view! { <span class="skill-desc-hidden"></span> }.into_any()
-                                } else {
-                                    view! { <span class="skill-description">{skill_text}</span> }.into_any()
-                                }}
-                                <button type="button" class="skill-remove" on:click=move |_| remove_skill(skill_title_clone.clone())>"×"</button>
-                            </span>
-                        }
-                    }).collect_view()}
-                </div>
-            }
-            .into_any()
+    if items.is_empty() {
+        view! {
+            <p class="skill-empty">"Nenhuma habilidade adicionada."</p>
         }
-    };
+        .into_any()
+    } else {
+        view! {
+            <div class="item-list">
+                {items.into_iter().map(|(skill_title, skill_text)| {
+                    let skill_title_clone = skill_title.clone();
+
+                    view! {
+                        <div class="item">
+                            <div class="item-title">
+                                <strong>{skill_title}</strong>
+
+                                <button
+                                    type="button"
+                                    class="remove"
+                                    on:click=move |_| {
+                                        remove_skill(skill_title_clone.clone());
+                                    }
+                                >
+                                    "Remover"
+                                </button>
+                            </div>
+
+                            <p>
+                                {if skill_text.is_empty() {
+                                    "Nenhuma descrição registrada.".to_string()
+                                } else {
+                                    skill_text
+                                }}
+                            </p>
+                        </div>
+                    }
+                }).collect_view()}
+            </div>
+        }
+        .into_any()
+    }
+};
+
 
     view! {
         <main class="shell">
