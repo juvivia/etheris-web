@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
+mod auth;
+
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Sheet {
