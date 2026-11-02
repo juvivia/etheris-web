@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen_futures::spawn_local;
+
 mod auth;
 mod cloud;
 
@@ -40,6 +42,35 @@ impl Default for Sheet {
     }
 }
 
+async fn prepare_account(
+    session: auth::AuthSession,
+) -> Result<(auth::AuthSession, Sheet, String), String> {
+    let character = match cloud::load_character(&session).await? {
+        Some(character) => character,
+        None => {
+            let default_sheet = Sheet::default();
+
+            let data = serde_json::to_value(&default_sheet)
+                .map_err(|e| e.to_string())?;
+
+            cloud::create_character(
+                &session,
+                &default_sheet.name,
+                data,
+            )
+            .await?
+        }
+    };
+
+    let sheet = serde_json::from_value::<Sheet>(
+        character.sheet_data
+    )
+    .unwrap_or_default();
+
+    Ok((session, sheet, character.id))
+}
+
+
 fn load_sheet() -> Sheet {
     web_sys::window()
         .and_then(|w| w.local_storage().ok().flatten())
@@ -75,8 +106,15 @@ fn decode_skill_description(description: &str) -> String {
 }
 
 #[component]
-fn App() -> impl IntoView {
-    let sheet = RwSignal::new(load_sheet());
+fn SheetApp(
+    initial_sheet: Sheet,
+    session: auth::AuthSession,
+    character_id: String,
+    on_logout: Callback<()>,
+) -> impl IntoView {
+    let sheet = RwSignal::new(initial_sheet);
+    let save_status = RwSignal::new(String::new());
+    let saving = RwSignal::new(false);
     let tab = RwSignal::new(0usize);
     let skill_name = RwSignal::new(String::new());
     let skill_description = RwSignal::new(String::new());
@@ -431,8 +469,261 @@ let remove_skill = move |skill_to_remove: String| {
                 </Show>
             </section>
 
-            <footer>"Salvamento local neste navegador · Protótipo sem contas"</footer>
+           <footer class="account-footer">
+    <span>{move || save_status.get()}</span>
+
+    <button
+        type="button"
+        disabled=move || saving.get()
+        on:click=move |_| {
+            let current_sheet = sheet.get();
+            let current_session = session.clone();
+            let current_id = character_id.clone();
+
+            let name = current_sheet.name.clone();
+            let data = match serde_json::to_value(&current_sheet) {
+                Ok(value) => value,
+                Err(error) => {
+                    save_status.set(format!("Erro: {}", error));
+                    return;
+                }
+            };
+
+            saving.set(true);
+            save_status.set("Salvando...".to_string());
+
+            spawn_local(async move {
+                let result = cloud::update_character(
+                    &current_session,
+                    &current_id,
+                    &name,
+                    data,
+                ).await;
+
+                match result {
+                    Ok(()) => save_status.set(
+                        "Ficha salva na nuvem.".to_string()
+                    ),
+                    Err(error) => save_status.set(
+                        format!("Erro ao salvar: {}", error)
+                    ),
+                }
+
+                saving.set(false);
+            });
+        }
+    >
+        {move || if saving.get() { "Salvando..." } else { "Salvar ficha" }}
+    </button>
+
+    <button
+        type="button"
+        on:click=move |_| on_logout.run(())
+    >
+        "Sair da conta"
+    </button>
+</footer>
         </main>
+    }
+}
+
+#[component]
+fn App() -> impl IntoView {
+    let account = RwSignal::new(
+        None::<(auth::AuthSession, Sheet, String)>
+    );
+
+    let loading = RwSignal::new(true);
+    let busy = RwSignal::new(false);
+    let register_mode = RwSignal::new(false);
+
+    let username = RwSignal::new(String::new());
+    let password = RwSignal::new(String::new());
+    let error_message = RwSignal::new(String::new());
+
+    // Recupera uma sessão anterior ao abrir o site.
+    Effect::new(move |_| {
+        spawn_local(async move {
+            if auth::load_session().is_some() {
+                match auth::refresh_session().await {
+                    Ok(session) => {
+                        match prepare_account(session).await {
+                            Ok(data) => account.set(Some(data)),
+                            Err(error) => error_message.set(error),
+                        }
+                    }
+                    Err(error) => {
+                        error_message.set(error);
+                    }
+                }
+            }
+
+            loading.set(false);
+        });
+    });
+
+    let submit_auth = move |_| {
+        if busy.get_untracked() {
+            return;
+        }
+
+        let user = username.get_untracked();
+        let pass = password.get_untracked();
+        let registering = register_mode.get_untracked();
+
+        busy.set(true);
+        error_message.set(String::new());
+
+        spawn_local(async move {
+            let result = if registering {
+                auth::register(&user, &pass).await
+            } else {
+                auth::login(&user, &pass).await
+            };
+
+            match result {
+                Ok(session) => {
+                    match prepare_account(session).await {
+                        Ok(data) => {
+                            account.set(Some(data));
+                        }
+                        Err(error) => {
+                            error_message.set(error);
+                        }
+                    }
+                }
+
+                Err(error) => {
+                    error_message.set(error);
+                }
+            }
+
+            busy.set(false);
+        });
+    };
+
+    let logout = Callback::new(move |_| {
+        spawn_local(async move {
+            let _ = auth::logout().await;
+            account.set(None);
+            username.set(String::new());
+            password.set(String::new());
+            error_message.set(String::new());
+        });
+    });
+
+    view! {
+        <Show
+            when=move || !loading.get()
+            fallback=|| view! {
+                <main class="auth-screen">
+                    <p>"Carregando SAMSARA..."</p>
+                </main>
+            }
+        >
+            {move || {
+                match account.get() {
+                    Some((session, initial_sheet, character_id)) => {
+                        view! {
+                            <SheetApp
+                                initial_sheet=initial_sheet
+                                session=session
+                                character_id=character_id
+                                on_logout=logout
+                            />
+                        }.into_any()
+                    }
+
+                    None => {
+                        view! {
+                            <main class="auth-screen">
+                                <section class="auth-card">
+                                    <h1>"SAMSARA"</h1>
+                                    <p>"O RPG"</p>
+
+                                    <h2>
+                                        {move || if register_mode.get() {
+                                            "Criar conta"
+                                        } else {
+                                            "Entrar"
+                                        }}
+                                    </h2>
+
+                                    <label>
+                                        "Nome de usuário"
+                                        <input
+                                            type="text"
+                                            placeholder="Seu usuário"
+                                            autocomplete="username"
+                                            prop:value=move || username.get()
+                                            on:input=move |ev| {
+                                                username.set(event_target_value(&ev));
+                                            }
+                                        />
+                                    </label>
+
+                                    <label>
+                                        "Senha"
+                                        <input
+                                            type="password"
+                                            placeholder="Sua senha"
+                                            autocomplete=move || {
+                                                if register_mode.get() {
+                                                    "new-password"
+                                                } else {
+                                                    "current-password"
+                                                }
+                                            }
+                                            prop:value=move || password.get()
+                                            on:input=move |ev| {
+                                                password.set(event_target_value(&ev));
+                                            }
+                                        />
+                                    </label>
+
+                                    <p class="auth-error">
+                                        {move || error_message.get()}
+                                    </p>
+
+                                    <button
+                                        type="button"
+                                        disabled=move || busy.get()
+                                        on:click=submit_auth
+                                    >
+                                        {move || {
+                                            if busy.get() {
+                                                "Aguarde..."
+                                            } else if register_mode.get() {
+                                                "Cadastrar"
+                                            } else {
+                                                "Entrar"
+                                            }
+                                        }}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="auth-switch"
+                                        on:click=move |_| {
+                                            register_mode.update(|v| *v = !*v);
+                                            error_message.set(String::new());
+                                        }
+                                    >
+                                        {move || {
+                                            if register_mode.get() {
+                                                "Já tenho uma conta"
+                                            } else {
+                                                "Criar uma conta"
+                                            }
+                                        }}
+                                    </button>
+                                </section>
+                            </main>
+                        }.into_any()
+                    }
+                }
+            }}
+        </Show>
     }
 }
 
