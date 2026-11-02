@@ -50,15 +50,15 @@ fn save_session(session: &AuthSession) -> Result<(), String> {
     let storage = window()
         .ok_or("Janela do navegador indisponível")?
         .local_storage()
-        .map_err(|_| "Não foi possível acessar o armazenamento")?
+        .map_err(|_| String::from("Não foi possível acessar o armazenamento"))?
         .ok_or("Armazenamento local indisponível")?;
 
     let value = serde_json::to_string(session)
-        .map_err(|_| "Erro ao preparar a sessão")?;
+        .map_err(|_| String::from("Erro ao preparar a sessão"))?;
 
     storage
         .set_item(SESSION_KEY, &value)
-        .map_err(|_| "Não foi possível salvar a sessão")
+        .map_err(|_| String::from("Não foi possível salvar a sessão"))
 }
 
 pub fn load_session() -> Option<AuthSession> {
@@ -71,12 +71,12 @@ pub fn clear_session() -> Result<(), String> {
     let storage = window()
         .ok_or("Janela do navegador indisponível")?
         .local_storage()
-        .map_err(|_| "Não foi possível acessar o armazenamento")?
+        .map_err(|_| String::from("Não foi possível acessar o armazenamento"))?
         .ok_or("Armazenamento local indisponível")?;
 
     storage
         .remove_item(SESSION_KEY)
-        .map_err(|_| "Não foi possível encerrar a sessão")
+        .map_err(|_| String::from("Não foi possível encerrar a sessão"))
 }
 
 async fn response_error(response: gloo_net::http::Response) -> String {
