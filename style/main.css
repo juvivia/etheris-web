@@ -103,6 +103,63 @@ footer { border-top: 1px solid #30383e; padding-top: 20px; }
     margin: 0;
 }
 
+.auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
 
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 32px;
+    border: 1px solid var(--border-color, #444);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.auth-card h1,
+.auth-card > p {
+    text-align: center;
+    margin: 0;
+}
+
+.auth-card label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.auth-card input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.auth-card button {
+    width: 100%;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.auth-card .auth-switch {
+    background: transparent;
+}
+
+.auth-error {
+    color: #d66;
+    overflow-wrap: anywhere;
+}
+
+.account-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
 
 @media(max-width: 540px) { .shell { padding: 24px 14px; } .form-grid { grid-template-columns: 1fr; } .tabs button { padding: 13px 9px; font-size: 12px; } .stat-grid { gap: 4px; } .stat { padding: 10px 5px; } .skill-input-row { flex-direction: column; align-items: stretch; } }
