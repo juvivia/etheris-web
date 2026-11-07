@@ -22,13 +22,13 @@ struct Sheet {
     capacity: u8,
     notes: String,
     #[serde(default = "inventory::default_inventory_width")]
-pub(crate) inventory_width: u8,
+    pub(crate) inventory_width: u8,
 
-#[serde(default = "inventory::default_inventory_height")]
-pub(crate) inventory_height: u8,
+    #[serde(default = "inventory::default_inventory_height")]
+    pub(crate) inventory_height: u8,
 
-#[serde(default)]
-pub(crate) inventory_items: Vec<inventory::InventoryItem>,
+    #[serde(default)]
+    pub(crate) inventory_items: Vec<inventory::InventoryItem>,
 }
 
 impl Default for Sheet {
@@ -133,7 +133,7 @@ fn SheetApp(
 
     Effect::new(move |_| save_sheet(&sheet.get()));
 
-   
+    
 let skill_items = move || {
     let raw = sheet.get().abilities;
 
@@ -164,7 +164,7 @@ let skill_items = move || {
         })
         .collect::<Vec<_>>()
 };
-    
+
 let add_skill = move |_| {
     let name = skill_name.get().trim().to_string();
     let description = skill_description.get().trim().to_string();
@@ -477,65 +477,65 @@ let remove_skill = move |skill_to_remove: String| {
                         placeholder="Escreva aqui..."
                         prop:value=move || sheet.get().notes.clone()
                         on:input=move |ev| sheet.update(|s| s.notes = event_target_value(&ev))
-                        <inventory::Inventory sheet=sheet />
                     ></textarea>
+                    <inventory::Inventory sheet=sheet />
                 </Show>
             </section>
 
-           <footer class="account-footer">
-    <span>{move || save_status.get()}</span>
+            <footer class="account-footer">
+                <span>{move || save_status.get()}</span>
 
-    <button
-        type="button"
-        disabled=move || saving.get()
-        on:click=move |_| {
-            let current_sheet = sheet.get();
-            let current_session = session.clone();
-            let current_id = character_id.clone();
+                <button
+                    type="button"
+                    disabled=move || saving.get()
+                    on:click=move |_| {
+                        let current_sheet = sheet.get();
+                        let current_session = session.clone();
+                        let current_id = character_id.clone();
 
-            let name = current_sheet.name.clone();
-            let data = match serde_json::to_value(&current_sheet) {
-                Ok(value) => value,
-                Err(error) => {
-                    save_status.set(format!("Erro: {}", error));
-                    return;
-                }
-            };
+                        let name = current_sheet.name.clone();
+                        let data = match serde_json::to_value(&current_sheet) {
+                            Ok(value) => value,
+                            Err(error) => {
+                                save_status.set(format!("Erro: {}", error));
+                                return;
+                            }
+                        };
 
-            saving.set(true);
-            save_status.set("Salvando...".to_string());
+                        saving.set(true);
+                        save_status.set("Salvando...".to_string());
 
-            spawn_local(async move {
-                let result = cloud::update_character(
-                    &current_session,
-                    &current_id,
-                    &name,
-                    data,
-                ).await;
+                        spawn_local(async move {
+                            let result = cloud::update_character(
+                                &current_session,
+                                &current_id,
+                                &name,
+                                data,
+                            ).await;
 
-                match result {
-                    Ok(()) => save_status.set(
-                        "Ficha salva na nuvem.".to_string()
-                    ),
-                    Err(error) => save_status.set(
-                        format!("Erro ao salvar: {}", error)
-                    ),
-                }
+                            match result {
+                                Ok(()) => save_status.set(
+                                    "Ficha salva na nuvem.".to_string()
+                                ),
+                                Err(error) => save_status.set(
+                                    format!("Erro ao salvar: {}", error)
+                                ),
+                            }
 
-                saving.set(false);
-            });
-        }
-    >
-        {move || if saving.get() { "Salvando..." } else { "Salvar ficha" }}
-    </button>
+                            saving.set(false);
+                        });
+                    }
+                >
+                    {move || if saving.get() { "Salvando..." } else { "Salvar ficha" }}
+                </button>
 
-    <button
-        type="button"
-        on:click=move |_| on_logout.run(())
-    >
-        "Sair da conta"
-    </button>
-</footer>
+                <button
+                    type="button"
+                    on:click=move |_| on_logout.run(())
+                >
+                    "Sair da conta"
+                </button>
+            </footer>
         </main>
     }
 }
