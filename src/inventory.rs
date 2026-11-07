@@ -351,16 +351,21 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                 </label>
             </div>
 
-            <div
-                class="inventory-grid"
-                style=move || {
-                    format!(
-                        "grid-template-columns: repeat({}, minmax(0, 1fr)); grid-template-rows: repeat({}, 54px);",
-                        sheet.get().inventory_width,
-                        sheet.get().inventory_height
-                    )
-                }
-            >
+        <div
+    class="inventory-grid"
+    style=move || {
+        let current = sheet.get();
+
+        format!(
+            "grid-template-columns: repeat({}, minmax(0, 1fr)); grid-template-rows: repeat({}, minmax(0, 1fr)); aspect-ratio: {} / {};",
+            current.inventory_width,
+            current.inventory_height,
+            current.inventory_width,
+            current.inventory_height
+        )
+    }
+>
+        
                 {grid_cells}
                 {placed_items}
             </div>
