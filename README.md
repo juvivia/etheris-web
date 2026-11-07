@@ -1,4 +1,4 @@
-# ETHERIS Web
+# SAMSARA character sheet manager
 
 Ficha minimalista em Rust + Leptos (CSR/WebAssembly), HTML e CSS. Sem imagens e sem JavaScript escrito manualmente.
 
