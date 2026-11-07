@@ -61,14 +61,95 @@ fn inventory_can_place(
     })
 }
 
+/// Tenta usar a célula indicada como início; para itens verticais, também
+/// considera a célula imediatamente acima quando não houver espaço abaixo.
+fn inventory_find_placement(
+    items: &[InventoryItem],
+    x: u8,
+    y: u8,
+    item_width: u8,
+    item_height: u8,
+    grid_width: u8,
+    grid_height: u8,
+    ignore_id: Option<u32>,
+) -> Option<(u8, u8)> {
+    if inventory_can_place(
+        items,
+        x,
+        y,
+        item_width,
+        item_height,
+        grid_width,
+        grid_height,
+        ignore_id,
+    ) {
+        return Some((x, y));
+    }
+
+    if item_height > 1 && y > 0 {
+        let above_y = y - 1;
+        if inventory_can_place(
+            items,
+            x,
+            above_y,
+            item_width,
+            item_height,
+            grid_width,
+            grid_height,
+            ignore_id,
+        ) {
+            return Some((x, above_y));
+        }
+    }
+
+    None
+}
+
+fn move_inventory_item(
+    sheet: RwSignal<crate::Sheet>,
+    item_id: u32,
+    x: u8,
+    y: u8,
+) {
+    sheet.update(|s| {
+        let item_size = s
+            .inventory_items
+            .iter()
+            .find(|item| item.id == item_id)
+            .map(|item| (item.width, item.height));
+
+        if let Some((item_width, item_height)) = item_size {
+            if let Some((new_x, new_y)) = inventory_find_placement(
+                &s.inventory_items,
+                x,
+                y,
+                item_width,
+                item_height,
+                s.inventory_width,
+                s.inventory_height,
+                Some(item_id),
+            ) {
+                if let Some(item) = s
+                    .inventory_items
+                    .iter_mut()
+                    .find(|item| item.id == item_id)
+                {
+                    item.x = new_x;
+                    item.y = new_y;
+                }
+            }
+        }
+    });
+}
+
 /// Componente principal do inventário.
 #[component]
 pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
     let selected_size = RwSignal::new("1x1".to_string());
     let selected_item = RwSignal::new(None::<u32>);
+    let dragged_item = RwSignal::new(None::<u32>);
 
-    // Cria as células vazias do grid. Se houver um item selecionado, clicar
-    // em uma célula livre reposiciona esse item em vez de criar outro.
+    // Células vazias: clique adiciona, soltar um item reposiciona.
     let grid_cells = move || {
         let current = sheet.get();
         let width = current.inventory_width;
@@ -83,71 +164,17 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                     <button
                         type="button"
                         class="inventory-cell"
-                        style=format!(
-                            "grid-column: {}; grid-row: {};",
-                            x + 1,
-                            y + 1
-                        )
-                        aria-label=format!(
-                            "Espaço {}, {}",
-                            x + 1,
-                            y + 1
-                        )
+                        style=format!("grid-column: {}; grid-row: {};", x + 1, y + 1)
+                        aria-label=format!("Espaço {}, {}", x + 1, y + 1)
                         on:click=move |_| {
-                            if let Some(item_id) = selected_item.get_untracked() {
-                                let mut moved = false;
-
-                                sheet.update(|s| {
-                                    let item_size = s
-                                        .inventory_items
-                                        .iter()
-                                        .find(|item| item.id == item_id)
-                                        .map(|item| (item.width, item.height));
-
-                                    if let Some((item_width, item_height)) = item_size {
-                                        if inventory_can_place(
-                                            &s.inventory_items,
-                                            x,
-                                            y,
-                                            item_width,
-                                            item_height,
-                                            s.inventory_width,
-                                            s.inventory_height,
-                                            Some(item_id),
-                                        ) {
-                                            if let Some(item) = s
-                                                .inventory_items
-                                                .iter_mut()
-                                                .find(|item| item.id == item_id)
-                                            {
-                                                item.x = x;
-                                                item.y = y;
-                                                moved = true;
-                                            }
-                                        }
-                                    }
-                                });
-
-                                if moved {
-                                    return;
-                                }
-                            }
-
-                            // Não crie outro item quando uma tentativa de mover
-                            // o item selecionado não couber no destino.
-                            if selected_item.get_untracked().is_some() {
-                                return;
-                            }
-
                             let (item_width, item_height) = inventory_size_for_selection(
                                 &selected_size.get_untracked(),
                             )
                             .unwrap_or((1, 1));
-
                             let mut new_id = None;
 
                             sheet.update(|s| {
-                                if inventory_can_place(
+                                if let Some((place_x, place_y)) = inventory_find_placement(
                                     &s.inventory_items,
                                     x,
                                     y,
@@ -160,21 +187,20 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                                     let id = s
                                         .inventory_items
                                         .iter()
-                                        .map(|i| i.id)
+                                        .map(|item| item.id)
                                         .max()
                                         .unwrap_or(0)
                                         .saturating_add(1);
 
                                     s.inventory_items.push(InventoryItem {
                                         id,
-                                        x,
-                                        y,
+                                        x: place_x,
+                                        y: place_y,
                                         width: item_width,
                                         height: item_height,
                                         name: String::new(),
                                         color: "#536b60".to_string(),
                                     });
-
                                     new_id = Some(id);
                                 }
                             });
@@ -183,13 +209,23 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                                 selected_item.set(Some(id));
                             }
                         }
+                        on:dragover=move |ev| {
+                            ev.prevent_default();
+                        }
+                        on:drop=move |ev| {
+                            ev.prevent_default();
+                            if let Some(item_id) = dragged_item.get_untracked() {
+                                move_inventory_item(sheet, item_id, x, y);
+                                dragged_item.set(None);
+                            }
+                        }
                     ></button>
                 }
             })
             .collect_view()
     };
 
-    // Desenha os itens que já estão no inventário.
+    // Itens existentes podem ser arrastados para uma célula vazia.
     let placed_items = move || {
         sheet
             .get()
@@ -197,13 +233,14 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
             .into_iter()
             .map(|item| {
                 let item_id = item.id;
+                let item_x = item.x;
+                let item_y = item.y;
                 let label = if item.name.trim().is_empty() {
                     "Item".to_string()
                 } else {
                     item.name.clone()
                 };
                 let title = label.clone();
-
                 let style = format!(
                     "grid-column: {} / span {}; grid-row: {} / span {}; background: {};",
                     item.x + 1,
@@ -219,8 +256,28 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                         class="inventory-item"
                         style=style
                         title=title
+                        draggable="true"
                         on:click=move |_| {
                             selected_item.set(Some(item_id));
+                        }
+                        on:dragstart=move |ev| {
+                            dragged_item.set(Some(item_id));
+                            if let Some(data_transfer) = ev.data_transfer() {
+                                let _ = data_transfer.set_data("text/plain", &item_id.to_string());
+                            }
+                        }
+                        on:dragend=move |_| {
+                            dragged_item.set(None);
+                        }
+                        on:dragover=move |ev| {
+                            ev.prevent_default();
+                        }
+                        on:drop=move |ev| {
+                            ev.prevent_default();
+                            if let Some(dragged_id) = dragged_item.get_untracked() {
+                                move_inventory_item(sheet, dragged_id, item_x, item_y);
+                                dragged_item.set(None);
+                            }
                         }
                     >
                         {label}
@@ -248,13 +305,10 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                     <div class="inventory-editor">
                         <div class="section-heading">
                             <h3>"Editar item"</h3>
-
                             <button
                                 type="button"
                                 class="remove"
-                                on:click=move |_| {
-                                    selected_item.set(None);
-                                }
+                                on:click=move |_| selected_item.set(None)
                             >
                                 "Fechar"
                             </button>
@@ -262,20 +316,14 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
 
                         <label>
                             "Nome do item"
-
                             <input
                                 type="text"
                                 placeholder="Ex.: Kit médico"
                                 prop:value=item.name.clone()
                                 on:input=move |ev| {
                                     let value = event_target_value(&ev);
-
                                     sheet.update(|s| {
-                                        if let Some(i) = s
-                                            .inventory_items
-                                            .iter_mut()
-                                            .find(|i| i.id == item_id)
-                                        {
+                                        if let Some(i) = s.inventory_items.iter_mut().find(|i| i.id == item_id) {
                                             i.name = value;
                                         }
                                     });
@@ -285,20 +333,14 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
 
                         <label>
                             "Cor do item"
-
                             <input
                                 class="inventory-color"
                                 type="color"
                                 prop:value=item.color.clone()
                                 on:input=move |ev| {
                                     let value = event_target_value(&ev);
-
                                     sheet.update(|s| {
-                                        if let Some(i) = s
-                                            .inventory_items
-                                            .iter_mut()
-                                            .find(|i| i.id == item_id)
-                                        {
+                                        if let Some(i) = s.inventory_items.iter_mut().find(|i| i.id == item_id) {
                                             i.color = value;
                                         }
                                     });
@@ -310,10 +352,7 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                             type="button"
                             class="remove inventory-delete"
                             on:click=move |_| {
-                                sheet.update(|s| {
-                                    s.inventory_items.retain(|i| i.id != item_id);
-                                });
-
+                                sheet.update(|s| s.inventory_items.retain(|i| i.id != item_id));
                                 selected_item.set(None);
                             }
                         >
@@ -323,15 +362,10 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                 }
                 .into_any()
             }
-
-            None => {
-                view! {
-                    <p class="hint">
-                        "Clique em um item para editar seu nome ou sua cor."
-                    </p>
-                }
-                .into_any()
+            None => view! {
+                <p class="hint">"Clique em um item para editar seu nome ou sua cor."</p>
             }
+            .into_any(),
         }
     };
 
@@ -340,26 +374,21 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
             <div class="section-heading">
                 <h3>"Inventário"</h3>
             </div>
-
             <p class="hint">
-                "Defina largura e altura. Escolha o tamanho e clique em um espaço vazio para adicionar um item. Selecione um item e clique em outro espaço livre para movê-lo."
+                "Defina largura e altura. Escolha o tamanho e clique em um espaço vazio para adicionar. Arraste um item para outra célula para movê-lo."
             </p>
 
             <div class="inventory-settings">
                 <label>
                     "Largura"
-
                     <input
                         type="number"
                         min="1"
                         max="12"
-                        prop:value=move || {
-                            sheet.get().inventory_width.to_string()
-                        }
+                        prop:value=move || sheet.get().inventory_width.to_string()
                         on:change=move |ev| {
                             if let Ok(v) = event_target_value(&ev).parse::<u8>() {
                                 let v = v.clamp(1, 12);
-
                                 sheet.update(|s| {
                                     if s.inventory_items.iter().all(|i| i.x + i.width <= v) {
                                         s.inventory_width = v;
@@ -372,18 +401,14 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
 
                 <label>
                     "Altura"
-
                     <input
                         type="number"
                         min="1"
                         max="12"
-                        prop:value=move || {
-                            sheet.get().inventory_height.to_string()
-                        }
+                        prop:value=move || sheet.get().inventory_height.to_string()
                         on:change=move |ev| {
                             if let Ok(v) = event_target_value(&ev).parse::<u8>() {
                                 let v = v.clamp(1, 12);
-
                                 sheet.update(|s| {
                                     if s.inventory_items.iter().all(|i| i.y + i.height <= v) {
                                         s.inventory_height = v;
@@ -396,12 +421,9 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
 
                 <label>
                     "Tamanho do próximo item"
-
                     <select
                         prop:value=move || selected_size.get()
-                        on:change=move |ev| {
-                            selected_size.set(event_target_value(&ev));
-                        }
+                        on:change=move |ev| selected_size.set(event_target_value(&ev))
                     >
                         <option value="1x1">"Pequeno — 1×1"</option>
                         <option value="2x1">"Médio — 2×1 (horizontal)"</option>
@@ -416,7 +438,6 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                 class="inventory-grid"
                 style=move || {
                     let current = sheet.get();
-
                     format!(
                         "grid-template-columns: repeat({}, minmax(0, 1fr)); grid-template-rows: repeat({}, minmax(0, 1fr)); aspect-ratio: {} / {};",
                         current.inventory_width,
