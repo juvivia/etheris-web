@@ -61,8 +61,9 @@ fn inventory_can_place(
     })
 }
 
-/// Tenta usar a célula indicada como início; para itens verticais, também
-/// considera a célula imediatamente acima quando não houver espaço abaixo.
+/// Encontra um local válido que cubra a célula escolhida como âncora.
+/// Assim, itens 2x1 podem ser colocados clicando em qualquer uma das duas
+/// células pretendidas, inclusive à esquerda/acima do ponto escolhido.
 fn inventory_find_placement(
     items: &[InventoryItem],
     x: u8,
@@ -73,44 +74,36 @@ fn inventory_find_placement(
     grid_height: u8,
     ignore_id: Option<u32>,
 ) -> Option<(u8, u8)> {
-    if inventory_can_place(
-        items,
-        x,
-        y,
-        item_width,
-        item_height,
-        grid_width,
-        grid_height,
-        ignore_id,
-    ) {
-        return Some((x, y));
-    }
+    // Prioriza usar a célula escolhida como canto superior esquerdo e, em
+    // seguida, tenta ancorar o item nela pelos outros cantos possíveis.
+    for y_offset in 0..item_height {
+        for x_offset in 0..item_width {
+            let Some(place_x) = x.checked_sub(x_offset) else {
+                continue;
+            };
+            let Some(place_y) = y.checked_sub(y_offset) else {
+                continue;
+            };
 
-    if item_height > 1 && y > 0 {
-        let above_y = y - 1;
-        if inventory_can_place(
-            items,
-            x,
-            above_y,
-            item_width,
-            item_height,
-            grid_width,
-            grid_height,
-            ignore_id,
-        ) {
-            return Some((x, above_y));
+            if inventory_can_place(
+                items,
+                place_x,
+                place_y,
+                item_width,
+                item_height,
+                grid_width,
+                grid_height,
+                ignore_id,
+            ) {
+                return Some((place_x, place_y));
+            }
         }
     }
 
     None
 }
 
-fn move_inventory_item(
-    sheet: RwSignal<crate::Sheet>,
-    item_id: u32,
-    x: u8,
-    y: u8,
-) {
+fn move_inventory_item(sheet: RwSignal<crate::Sheet>, item_id: u32, x: u8, y: u8) {
     sheet.update(|s| {
         let item_size = s
             .inventory_items
@@ -149,7 +142,6 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
     let selected_item = RwSignal::new(None::<u32>);
     let dragged_item = RwSignal::new(None::<u32>);
 
-    // Células vazias: clique adiciona, soltar um item reposiciona.
     let grid_cells = move || {
         let current = sheet.get();
         let width = current.inventory_width;
@@ -167,6 +159,14 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                         style=format!("grid-column: {}; grid-row: {};", x + 1, y + 1)
                         aria-label=format!("Espaço {}, {}", x + 1, y + 1)
                         on:click=move |_| {
+                            // Toque/clique em um item e depois em uma célula
+                            // para movê-lo; isso também funciona em celulares,
+                            // onde o drag-and-drop HTML nativo não é confiável.
+                            if let Some(item_id) = selected_item.get_untracked() {
+                                move_inventory_item(sheet, item_id, x, y);
+                                return;
+                            }
+
                             let (item_width, item_height) = inventory_size_for_selection(
                                 &selected_size.get_untracked(),
                             )
@@ -225,7 +225,6 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
             .collect_view()
     };
 
-    // Itens existentes podem ser arrastados para uma célula vazia.
     let placed_items = move || {
         sheet
             .get()
@@ -287,7 +286,6 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
             .collect_view()
     };
 
-    // Editor do item selecionado.
     let selected_details = move || {
         let item = selected_item.get().and_then(|wanted| {
             sheet
@@ -375,7 +373,7 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                 <h3>"Inventário"</h3>
             </div>
             <p class="hint">
-                "Defina largura e altura. Escolha o tamanho e clique em um espaço vazio para adicionar. Arraste um item para outra célula para movê-lo."
+                "Defina largura e altura. Escolha o tamanho e clique em um espaço vazio para adicionar. Arraste um item ou toque nele e depois na célula de destino para movê-lo."
             </p>
 
             <div class="inventory-settings">
