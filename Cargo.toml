@@ -7,7 +7,7 @@ edition = "2021"
 leptos = { version = "0.7", features = ["csr"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-web-sys = { version = "0.3", features = ["Window", "Storage"] }
+web-sys = { version = "0.3", features = ["Window", "Storage", "DataTransfer"] }
 gloo-net = { version = "0.7", features = ["http", "json"] }
 wasm-bindgen-futures = "0.4"
 
