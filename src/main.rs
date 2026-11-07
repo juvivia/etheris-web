@@ -130,76 +130,90 @@ fn SheetApp(
     let tab = RwSignal::new(0usize);
     let skill_name = RwSignal::new(String::new());
     let skill_description = RwSignal::new(String::new());
+    let skill_form_open = RwSignal::new(false);
 
     Effect::new(move |_| save_sheet(&sheet.get()));
 
-    
-let skill_items = move || {
-    let raw = sheet.get().abilities;
+    let skill_items = move || {
+        let raw = sheet.get().abilities;
 
-    // Primeiro tenta ler o formato novo (JSON).
-    if let Ok(items) = serde_json::from_str::<Vec<(String, String)>>(&raw) {
-        return items;
-    }
+        if let Ok(items) = serde_json::from_str::<Vec<(String, String)>>(&raw) {
+            return items;
+        }
 
-    // Se não for JSON, tenta ler o formato antigo.
-    raw.lines()
-        .map(str::trim)
-        .filter(|skill| !skill.is_empty())
-        .filter_map(|skill| {
-            if let Some((name, description)) = skill.split_once("::") {
-                let name = name.trim();
+        raw.lines()
+            .map(str::trim)
+            .filter(|skill| !skill.is_empty())
+            .filter_map(|skill| {
+                if let Some((name, description)) = skill.split_once("::") {
+                    let name = name.trim();
 
-                if name.is_empty() {
-                    None
+                    if name.is_empty() {
+                        None
+                    } else {
+                        Some((
+                            name.to_string(),
+                            decode_skill_description(description.trim()),
+                        ))
+                    }
                 } else {
-                    Some((
-                        name.to_string(),
-                        decode_skill_description(description.trim()),
-                    ))
+                    Some((skill.to_string(), String::new()))
                 }
-            } else {
-                Some((skill.to_string(), String::new()))
-            }
-        })
-        .collect::<Vec<_>>()
-};
+            })
+            .collect::<Vec<_>>()
+    };
 
-let add_skill = move |_| {
-    let name = skill_name.get().trim().to_string();
-    let description = skill_description.get().trim().to_string();
+    let add_skill = move |_| {
+        let name = skill_name.get().trim().to_string();
+        let description = skill_description.get().trim().to_string();
 
-    if name.is_empty() {
-        return;
-    }
+        if name.is_empty() {
+            return;
+        }
 
-    let mut items = skill_items();
+        let mut items = skill_items();
 
-    if !items.iter().any(|(existing_name, _)| {
-        existing_name.eq_ignore_ascii_case(&name)
-    }) {
-        items.push((name, description));
-    }
+        if !items.iter().any(|(existing_name, _)| {
+            existing_name.eq_ignore_ascii_case(&name)
+        }) {
+            items.push((name, description));
+        }
 
-    sheet.update(|s| {
-        s.abilities = serde_json::to_string(&items).unwrap_or_default();
-    });
+        sheet.update(|s| {
+            s.abilities = serde_json::to_string(&items).unwrap_or_default();
+        });
 
-    skill_name.set(String::new());
-    skill_description.set(String::new());
-};
+        skill_name.set(String::new());
+        skill_description.set(String::new());
+    };
 
-let remove_skill = move |skill_to_remove: String| {
-    let items = skill_items()
-        .into_iter()
-        .filter(|(name, _)| name != &skill_to_remove)
-        .collect::<Vec<_>>();
+    let remove_skill = move |skill_to_remove: String| {
+        let items = skill_items()
+            .into_iter()
+            .filter(|(name, _)| name != &skill_to_remove)
+            .collect::<Vec<_>>();
 
-    sheet.update(|s| {
-        s.abilities = serde_json::to_string(&items).unwrap_or_default();
-    });
-};
+        sheet.update(|s| {
+            s.abilities = serde_json::to_string(&items).unwrap_or_default();
+        });
+    };
 
+    let submit_skill = move |_| {
+        if !skill_form_open.get() {
+            skill_form_open.set(true);
+            return;
+        }
+
+        let has_name = !skill_name.get().trim().is_empty();
+
+        if has_name {
+            add_skill(())
+        }
+
+        if has_name {
+            skill_form_open.set(false);
+        }
+    };
 
     let render_skill_list = move || {
         let items = skill_items();
@@ -296,7 +310,7 @@ let remove_skill = move |skill_to_remove: String| {
                                     });
                                 }
                             >
-                                <option value="" selected=move || sheet.get().race.is_empty()>"Selecione"</option>
+                                <option value="" selected=move || sheet.get().race.is_empty() >"Selecione"</option>
                                 <option value="Humano" selected=move || sheet.get().race == "Humano">"Humano"</option>
                                 <option value="Pesadelo" selected=move || sheet.get().race == "Pesadelo">"Pesadelo"</option>
                                 <option value="Áureo" selected=move || sheet.get().race == "Áureo">"Áureo"</option>
@@ -309,7 +323,7 @@ let remove_skill = move |skill_to_remove: String| {
                                 prop:value=move || sheet.get().specialization.clone()
                                 on:change=move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))
                             >
-                                <option value="" selected=move || sheet.get().specialization.is_empty()>"Selecione"</option>
+                                <option value="" selected=move || sheet.get().specialization.is_empty() >"Selecione"</option>
                                 {move || {
                                     specialization_options_for_race(&sheet.get().race)
                                         .into_iter()
@@ -330,7 +344,7 @@ let remove_skill = move |skill_to_remove: String| {
                                 prop:value=move || sheet.get().community.clone()
                                 on:change=move |ev| sheet.update(|s| s.community = event_target_value(&ev))
                             >
-                                <option value="" selected=move || sheet.get().community.is_empty()>"Selecione"</option>
+                                <option value="" selected=move || sheet.get().community.is_empty() >"Selecione"</option>
                                 <option value="Pântano" selected=move || sheet.get().community == "Pântano">"Pântano"</option>
                                 <option value="Tundra" selected=move || sheet.get().community == "Tundra">"Tundra"</option>
                                 <option value="Cidade" selected=move || sheet.get().community == "Cidade">"Cidade"</option>
@@ -345,7 +359,7 @@ let remove_skill = move |skill_to_remove: String| {
                                 prop:value=move || sheet.get().class_name.clone()
                                 on:change=move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))
                             >
-                                <option value="" selected=move || sheet.get().class_name.is_empty()>"Selecione"</option>
+                                <option value="" selected=move || sheet.get().class_name.is_empty() >"Selecione"</option>
                                 <option value="Médico" selected=move || sheet.get().class_name == "Médico">"Médico"</option>
                                 <option value="Artífice" selected=move || sheet.get().class_name == "Artífice">"Artífice"</option>
                                 <option value="Engenheiro" selected=move || sheet.get().class_name == "Engenheiro">"Engenheiro"</option>
@@ -367,24 +381,33 @@ let remove_skill = move |skill_to_remove: String| {
                     <h3>"Habilidades"</h3>
                     <div class="skill-field">
                         <div class="skill-form">
-                            <input
-                                class="skill-input"
-                                placeholder="Nome da habilidade"
-                                prop:value=move || skill_name.get()
-                                on:input=move |ev| skill_name.set(event_target_value(&ev))
-                            />
+                            <Show when=move || skill_form_open.get()>
+                                <input
+                                    class="skill-input"
+                                    placeholder="Nome da habilidade"
+                                    prop:value=move || skill_name.get()
+                                    on:input=move |ev| skill_name.set(event_target_value(&ev))
+                                />
 
-                            <div class="skill-description-row">
-                                <textarea
-                                    class="skill-input skill-description-input"
-                                    rows="3"
-                                    placeholder="Descrição"
-                                    prop:value=move || skill_description.get()
-                                    on:input=move |ev| skill_description.set(event_target_value(&ev))
-                                ></textarea>
-                                <button type="button" class="skill-add" on:click=add_skill>"Adicionar"</button>
-                            </div>
+                                <div class="skill-description-row">
+                                    <textarea
+                                        class="skill-input skill-description-input"
+                                        rows="3"
+                                        placeholder="Descrição"
+                                        prop:value=move || skill_description.get()
+                                        on:input=move |ev| skill_description.set(event_target_value(&ev))
+                                    ></textarea>
+                                </div>
+                            </Show>
                         </div>
+
+                        <button
+                            type="button"
+                            class="skill-add"
+                            on:click=submit_skill
+                        >
+                            {move || if skill_form_open.get() { "Salvar" } else { "Adicionar" }}
+                        </button>
 
                         <div class="skill-list">
                             {render_skill_list}
@@ -554,7 +577,6 @@ fn App() -> impl IntoView {
     let password = RwSignal::new(String::new());
     let error_message = RwSignal::new(String::new());
 
-    // Recupera uma sessão anterior ao abrir o site.
     Effect::new(move |_| {
         spawn_local(async move {
             if auth::load_session().is_some() {
