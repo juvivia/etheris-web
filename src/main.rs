@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen_futures::spawn_local;
 
+mod inventory;
 mod auth;
 mod cloud;
 
@@ -20,6 +21,14 @@ struct Sheet {
     abilities: String,
     capacity: u8,
     notes: String,
+    #[serde(default = "inventory::default_inventory_width")]
+pub(crate) inventory_width: u8,
+
+#[serde(default = "inventory::default_inventory_height")]
+pub(crate) inventory_height: u8,
+
+#[serde(default)]
+pub(crate) inventory_items: Vec<inventory::InventoryItem>,
 }
 
 impl Default for Sheet {
@@ -38,6 +47,9 @@ impl Default for Sheet {
             abilities: String::new(),
             capacity: 3,
             notes: String::new(),
+            inventory_width: 6,
+            inventory_height: 6,
+            inventory_items: Vec::new(),
         }
     }
 }
@@ -458,13 +470,14 @@ let remove_skill = move |skill_to_remove: String| {
 
                 <Show when=move || tab.get() == 2>
                     <h2>"Anotações"</h2>
-                    <p class="hint">"Pistas, acontecimentos e objetivos da campanha."</p>
+                    <p class="hint">"Escreva.."</p>
                     <textarea
                         class="notes"
                         rows="16"
                         placeholder="Escreva aqui..."
                         prop:value=move || sheet.get().notes.clone()
                         on:input=move |ev| sheet.update(|s| s.notes = event_target_value(&ev))
+                        <inventory::Inventory sheet=sheet />
                     ></textarea>
                 </Show>
             </section>
