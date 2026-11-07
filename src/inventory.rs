@@ -1,4 +1,3 @@
-
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -137,13 +136,13 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
             .inventory_items
             .into_iter()
             .map(|item| {
-                let id = item.id;
-
+                let item_id = item.id;
                 let label = if item.name.trim().is_empty() {
                     "Item".to_string()
                 } else {
                     item.name.clone()
                 };
+                let title = label.clone();
 
                 let style = format!(
                     "grid-column: {} / span {}; grid-row: {} / span {}; background: {};",
@@ -159,9 +158,9 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                         type="button"
                         class="inventory-item"
                         style=style
-                        title=label.clone()
+                        title=title
                         on:click=move |_| {
-                            selected_item.set(Some(id));
+                            selected_item.set(Some(item_id));
                         }
                     >
                         {label}
@@ -252,9 +251,7 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                             class="remove inventory-delete"
                             on:click=move |_| {
                                 sheet.update(|s| {
-                                    s.inventory_items.retain(
-                                        |i| i.id != item_id
-                                    );
+                                    s.inventory_items.retain(|i| i.id != item_id);
                                 });
 
                                 selected_item.set(None);
@@ -304,9 +301,7 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                                 let v = v.clamp(1, 12);
 
                                 sheet.update(|s| {
-                                    if s.inventory_items.iter().all(
-                                        |i| i.x + i.width <= v
-                                    ) {
+                                    if s.inventory_items.iter().all(|i| i.x + i.width <= v) {
                                         s.inventory_width = v;
                                     }
                                 });
@@ -330,9 +325,7 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                                 let v = v.clamp(1, 12);
 
                                 sheet.update(|s| {
-                                    if s.inventory_items.iter().all(
-                                        |i| i.y + i.height <= v
-                                    ) {
+                                    if s.inventory_items.iter().all(|i| i.y + i.height <= v) {
                                         s.inventory_height = v;
                                     }
                                 });
@@ -350,21 +343,10 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                             selected_size.set(event_target_value(&ev));
                         }
                     >
-                        <option value="1x1">
-                            "Pequeno — 1×1"
-                        </option>
-
-                        <option value="1x2">
-                            "Médio — 2×1"
-                        </option>
-
-                        <option value="2x2">
-                            "Grande — 2×2"
-                        </option>
-
-                        <option value="3x3">
-                            "Gigantesco — 3×3"
-                        </option>
+                        <option value="1x1">"Pequeno — 1×1"</option>
+                        <option value="1x2">"Médio — 2×1"</option>
+                        <option value="2x2">"Grande — 2×2"</option>
+                        <option value="3x3">"Gigantesco — 3×3"</option>
                     </select>
                 </label>
             </div>
