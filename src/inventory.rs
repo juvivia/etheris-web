@@ -21,6 +21,17 @@ pub(crate) fn default_inventory_height() -> u8 {
     6
 }
 
+fn inventory_size_for_selection(size: &str) -> Option<(u8, u8)> {
+    match size {
+        "1x1" => Some((1, 1)),
+        "2x1" => Some((2, 1)),
+        "1x2" => Some((1, 2)),
+        "2x2" => Some((2, 2)),
+        "3x3" => Some((3, 3)),
+        _ => None,
+    }
+}
+
 /// Verifica se um item cabe no grid e se não sobrepõe outro item.
 fn inventory_can_place(
     items: &[InventoryItem],
@@ -30,6 +41,7 @@ fn inventory_can_place(
     item_height: u8,
     grid_width: u8,
     grid_height: u8,
+    ignore_id: Option<u32>,
 ) -> bool {
     if x.saturating_add(item_width) > grid_width
         || y.saturating_add(item_height) > grid_height
@@ -38,6 +50,10 @@ fn inventory_can_place(
     }
 
     !items.iter().any(|item| {
+        if ignore_id == Some(item.id) {
+            return false;
+        }
+
         x < item.x + item.width
             && x + item_width > item.x
             && y < item.y + item.height
@@ -51,7 +67,8 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
     let selected_size = RwSignal::new("1x1".to_string());
     let selected_item = RwSignal::new(None::<u32>);
 
-    // Cria as células vazias do grid.
+    // Cria as células vazias do grid. Se houver um item selecionado, clicar
+    // em uma célula livre reposiciona esse item em vez de criar outro.
     let grid_cells = move || {
         let current = sheet.get();
         let width = current.inventory_width;
@@ -77,13 +94,55 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                             y + 1
                         )
                         on:click=move |_| {
-                            let (iw, ih) =
-                                match selected_size.get_untracked().as_str() {
-                                    "1x2" => (2, 1),
-                                    "2x2" => (2, 2),
-                                    "3x3" => (3, 3),
-                                    _ => (1, 1),
-                                };
+                            if let Some(item_id) = selected_item.get_untracked() {
+                                let mut moved = false;
+
+                                sheet.update(|s| {
+                                    let item_size = s
+                                        .inventory_items
+                                        .iter()
+                                        .find(|item| item.id == item_id)
+                                        .map(|item| (item.width, item.height));
+
+                                    if let Some((item_width, item_height)) = item_size {
+                                        if inventory_can_place(
+                                            &s.inventory_items,
+                                            x,
+                                            y,
+                                            item_width,
+                                            item_height,
+                                            s.inventory_width,
+                                            s.inventory_height,
+                                            Some(item_id),
+                                        ) {
+                                            if let Some(item) = s
+                                                .inventory_items
+                                                .iter_mut()
+                                                .find(|item| item.id == item_id)
+                                            {
+                                                item.x = x;
+                                                item.y = y;
+                                                moved = true;
+                                            }
+                                        }
+                                    }
+                                });
+
+                                if moved {
+                                    return;
+                                }
+                            }
+
+                            // Não crie outro item quando uma tentativa de mover
+                            // o item selecionado não couber no destino.
+                            if selected_item.get_untracked().is_some() {
+                                return;
+                            }
+
+                            let (item_width, item_height) = inventory_size_for_selection(
+                                &selected_size.get_untracked(),
+                            )
+                            .unwrap_or((1, 1));
 
                             let mut new_id = None;
 
@@ -92,10 +151,11 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                                     &s.inventory_items,
                                     x,
                                     y,
-                                    iw,
-                                    ih,
+                                    item_width,
+                                    item_height,
                                     s.inventory_width,
                                     s.inventory_height,
+                                    None,
                                 ) {
                                     let id = s
                                         .inventory_items
@@ -103,14 +163,14 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                                         .map(|i| i.id)
                                         .max()
                                         .unwrap_or(0)
-                                        + 1;
+                                        .saturating_add(1);
 
                                     s.inventory_items.push(InventoryItem {
                                         id,
                                         x,
                                         y,
-                                        width: iw,
-                                        height: ih,
+                                        width: item_width,
+                                        height: item_height,
                                         name: String::new(),
                                         color: "#536b60".to_string(),
                                     });
@@ -282,7 +342,7 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
             </div>
 
             <p class="hint">
-                "Defina largura e altura. Escolha o tamanho e clique em um espaço vazio para adicionar um item."
+                "Defina largura e altura. Escolha o tamanho e clique em um espaço vazio para adicionar um item. Selecione um item e clique em outro espaço livre para movê-lo."
             </p>
 
             <div class="inventory-settings">
@@ -344,28 +404,28 @@ pub(crate) fn Inventory(sheet: RwSignal<crate::Sheet>) -> impl IntoView {
                         }
                     >
                         <option value="1x1">"Pequeno — 1×1"</option>
-                        <option value="1x2">"Médio — 2×1"</option>
+                        <option value="2x1">"Médio — 2×1 (horizontal)"</option>
+                        <option value="1x2">"Médio — 2×1 (vertical)"</option>
                         <option value="2x2">"Grande — 2×2"</option>
                         <option value="3x3">"Gigantesco — 3×3"</option>
                     </select>
                 </label>
             </div>
 
-        <div
-    class="inventory-grid"
-    style=move || {
-        let current = sheet.get();
+            <div
+                class="inventory-grid"
+                style=move || {
+                    let current = sheet.get();
 
-        format!(
-            "grid-template-columns: repeat({}, minmax(0, 1fr)); grid-template-rows: repeat({}, minmax(0, 1fr)); aspect-ratio: {} / {};",
-            current.inventory_width,
-            current.inventory_height,
-            current.inventory_width,
-            current.inventory_height
-        )
-    }
->
-        
+                    format!(
+                        "grid-template-columns: repeat({}, minmax(0, 1fr)); grid-template-rows: repeat({}, minmax(0, 1fr)); aspect-ratio: {} / {};",
+                        current.inventory_width,
+                        current.inventory_height,
+                        current.inventory_width,
+                        current.inventory_height
+                    )
+                }
+            >
                 {grid_cells}
                 {placed_items}
             </div>
