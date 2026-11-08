@@ -17,24 +17,20 @@ struct Sheet {
     pv: i32,
     san: i32,
     pm: i32,
-#[serde(default)]
-pv_max: i32,
-
-#[serde(default)]
-san_max: i32,
-
-#[serde(default)]
-pm_max: i32,
+    #[serde(default)]
+    pv_max: i32,
+    #[serde(default)]
+    san_max: i32,
+    #[serde(default)]
+    pm_max: i32,
     stats: [i32; 5],
     abilities: String,
     capacity: u8,
     notes: String,
     #[serde(default = "inventory::default_inventory_width")]
     pub(crate) inventory_width: u8,
-
     #[serde(default = "inventory::default_inventory_height")]
     pub(crate) inventory_height: u8,
-
     #[serde(default)]
     pub(crate) inventory_items: Vec<inventory::InventoryItem>,
 }
@@ -72,7 +68,6 @@ async fn prepare_account(
         Some(character) => character,
         None => {
             let default_sheet = Sheet::default();
-
             let data = serde_json::to_value(&default_sheet)
                 .map_err(|e| e.to_string())?;
 
@@ -85,14 +80,11 @@ async fn prepare_account(
         }
     };
 
-    let sheet = serde_json::from_value::<Sheet>(
-        character.sheet_data
-    )
-    .unwrap_or_default();
+    let sheet = serde_json::from_value::<Sheet>(character.sheet_data)
+        .unwrap_or_default();
 
     Ok((session, sheet, character.id))
 }
-
 
 fn load_sheet() -> Sheet {
     web_sys::window()
@@ -159,7 +151,6 @@ fn SheetApp(
             .filter_map(|skill| {
                 if let Some((name, description)) = skill.split_once("::") {
                     let name = name.trim();
-
                     if name.is_empty() {
                         None
                     } else {
@@ -184,7 +175,6 @@ fn SheetApp(
         }
 
         let mut items = skill_items();
-
         if !items.iter().any(|(existing_name, _)| {
             existing_name.eq_ignore_ascii_case(&name)
         }) {
@@ -217,12 +207,8 @@ fn SheetApp(
         }
 
         let has_name = !skill_name.get().trim().is_empty();
-
         if has_name {
-            add_skill(())
-        }
-
-        if has_name {
+            add_skill(());
             skill_form_open.set(false);
         }
     };
@@ -245,18 +231,14 @@ fn SheetApp(
                             <div class="item">
                                 <div class="item-title">
                                     <strong>{skill_title}</strong>
-
                                     <button
                                         type="button"
                                         class="remove"
-                                        on:click=move |_| {
-                                            remove_skill(skill_title_clone.clone());
-                                        }
+                                        on:click=move |_| remove_skill(skill_title_clone.clone())
                                     >
                                         "Remover"
                                     </button>
                                 </div>
-
                                 <p>
                                     {if skill_text.is_empty() {
                                         "Nenhuma descrição registrada.".to_string()
@@ -298,13 +280,11 @@ fn SheetApp(
             <section class="content">
                 <Show when=move || tab.get() == 0>
                     <h2>"Personagem"</h2>
-
                     <div class="form-grid">
                         <label>
                             "Nome"
                             <input prop:value=move || sheet.get().name.clone() on:input=move |ev| sheet.update(|s| s.name = event_target_value(&ev)) />
                         </label>
-
                         <label>
                             "Raça"
                             <select
@@ -328,7 +308,6 @@ fn SheetApp(
                                 <option value="Áureo" selected=move || sheet.get().race == "Áureo">"Áureo"</option>
                             </select>
                         </label>
-
                         <label>
                             "Especialização"
                             <select
@@ -341,15 +320,12 @@ fn SheetApp(
                                         .into_iter()
                                         .map(|opt| {
                                             let selected = sheet.get().specialization == opt;
-                                            view! {
-                                                <option value={opt} selected={selected}>{opt}</option>
-                                            }
+                                            view! { <option value={opt} selected={selected}>{opt}</option> }
                                         })
                                         .collect_view()
                                 }}
                             </select>
                         </label>
-
                         <label>
                             "Comunidade"
                             <select
@@ -364,7 +340,6 @@ fn SheetApp(
                                 <option value="Deserto" selected=move || sheet.get().community == "Deserto">"Deserto"</option>
                             </select>
                         </label>
-
                         <label>
                             "Classe"
                             <select
@@ -379,7 +354,6 @@ fn SheetApp(
                                 <option value="Cozinheiro" selected=move || sheet.get().class_name == "Cozinheiro">"Cozinheiro"</option>
                             </select>
                         </label>
-
                         <label>
                             "Nível"
                             <input type="number" min="1" max="10" prop:value=move || sheet.get().level.to_string() on:input=move |ev| {
@@ -400,7 +374,6 @@ fn SheetApp(
                                     prop:value=move || skill_name.get()
                                     on:input=move |ev| skill_name.set(event_target_value(&ev))
                                 />
-
                                 <div class="skill-description-row">
                                     <textarea
                                         class="skill-input skill-description-input"
@@ -412,212 +385,93 @@ fn SheetApp(
                                 </div>
                             </Show>
                         </div>
-
-                        <button
-                            type="button"
-                            class="skill-add"
-                            on:click=submit_skill
-                        >
+                        <button type="button" class="skill-add" on:click=submit_skill>
                             {move || if skill_form_open.get() { "Salvar" } else { "Adicionar" }}
                         </button>
-
-                        <div class="skill-list">
-                            {render_skill_list}
-                        </div>
+                        <div class="skill-list">{render_skill_list}</div>
                     </div>
                 </Show>
 
                 <Show when=move || tab.get() == 1>
                     <h2>"Atributos"</h2>
-
                     <div class="resource-heading">
                         <h3>"Recursos"</h3>
                     </div>
-
                     <div class="resource-grid">
                         <label class="resource-card">
                             "PV"
-
-                            <input
-                                type="number"
-                                aria-label="PV atual"
-                                prop:value=move || sheet.get().pv.to_string()
-                                on:input=move |ev| {
-                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                        sheet.update(|s| s.pv = v);
-                                    }
-                                }
-                            />
-
+                            <input type="number" aria-label="PV atual" prop:value=move || sheet.get().pv.to_string() on:input=move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.pv = v); }
+                            } />
                             <span class="resource-max-label">"Máximo"</span>
-
-                            <input
-                                class="resource-max-input"
-                                type="number"
-                                min="0"
-                                disabled=move || !resource_editing.get()
-                                prop:value=move || {
-                                    let s = sheet.get();
-                                    if s.pv_max > 0 { s.pv_max } else { s.pv }.to_string()
-                                }
-                                on:input=move |ev| {
-                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                        sheet.update(|s| s.pv_max = v.max(0));
-                                    }
-                                }
-                            />
+                            <input class="resource-max-input" type="number" min="0" disabled=move || !resource_editing.get() prop:value=move || {
+                                let s = sheet.get();
+                                if s.pv_max > 0 { s.pv_max } else { s.pv }.to_string()
+                            } on:input=move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.pv_max = v.max(0)); }
+                            } />
                         </label>
-
                         <label class="resource-card">
                             "SAN"
-
-                            <input
-                                type="number"
-                                aria-label="SAN atual"
-                                prop:value=move || sheet.get().san.to_string()
-                                on:input=move |ev| {
-                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                        sheet.update(|s| s.san = v);
-                                    }
-                                }
-                            />
-
+                            <input type="number" aria-label="SAN atual" prop:value=move || sheet.get().san.to_string() on:input=move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.san = v); }
+                            } />
                             <span class="resource-max-label">"Máximo"</span>
-
-                            <input
-                                class="resource-max-input"
-                                type="number"
-                                min="0"
-                                disabled=move || !resource_editing.get()
-                                prop:value=move || {
-                                    let s = sheet.get();
-                                    if s.san_max > 0 { s.san_max } else { s.san }.to_string()
-                                }
-                                on:input=move |ev| {
-                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                        sheet.update(|s| s.san_max = v.max(0));
-                                    }
-                                }
-                            />
+                            <input class="resource-max-input" type="number" min="0" disabled=move || !resource_editing.get() prop:value=move || {
+                                let s = sheet.get();
+                                if s.san_max > 0 { s.san_max } else { s.san }.to_string()
+                            } on:input=move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.san_max = v.max(0)); }
+                            } />
                         </label>
-
                         <label class="resource-card">
                             "PM"
-
-                            <input
-                                type="number"
-                                aria-label="PM atual"
-                                prop:value=move || sheet.get().pm.to_string()
-                                on:input=move |ev| {
-                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                        sheet.update(|s| s.pm = v);
-                                    }
-                                }
-                            />
-
+                            <input type="number" aria-label="PM atual" prop:value=move || sheet.get().pm.to_string() on:input=move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.pm = v); }
+                            } />
                             <span class="resource-max-label">"Máximo"</span>
-
-                            <input
-                                class="resource-max-input"
-                                type="number"
-                                min="0"
-                                disabled=move || !resource_editing.get()
-                                prop:value=move || {
-                                    let s = sheet.get();
-                                    if s.pm_max > 0 { s.pm_max } else { s.pm }.to_string()
-                                }
-                                on:input=move |ev| {
-                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                        sheet.update(|s| s.pm_max = v.max(0));
-                                    }
-                                }
-                            />
+                            <input class="resource-max-input" type="number" min="0" disabled=move || !resource_editing.get() prop:value=move || {
+                                let s = sheet.get();
+                                if s.pm_max > 0 { s.pm_max } else { s.pm }.to_string()
+                            } on:input=move |ev| {
+                                if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.pm_max = v.max(0)); }
+                            } />
                         </label>
                     </div>
 
                     <h3>"Atributos"</h3>
                     <div class="stat-grid">
-                        <div class="stat">
-                            <strong>"INT"</strong>
-                            <input aria-label="Atributo INT" type="number" prop:value=move || sheet.get().stats[0].to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.stats[0] = v);
-                                }
-                            } />
-                        </div>
-                        <div class="stat">
-                            <strong>"FIS"</strong>
-                            <input aria-label="Atributo FIS" type="number" prop:value=move || sheet.get().stats[1].to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.stats[1] = v);
-                                }
-                            } />
-                        </div>
-                        <div class="stat">
-                            <strong>"DOM"</strong>
-                            <input aria-label="Atributo DOM" type="number" prop:value=move || sheet.get().stats[2].to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.stats[2] = v);
-                                }
-                            } />
-                        </div>
-                        <div class="stat">
-                            <strong>"VEL"</strong>
-                            <input aria-label="Atributo VEL" type="number" prop:value=move || sheet.get().stats[3].to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.stats[3] = v);
-                                }
-                            } />
-                        </div>
-                        <div class="stat">
-                            <strong>"HAB"</strong>
-                            <input aria-label="Atributo HAB" type="number" prop:value=move || sheet.get().stats[4].to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.stats[4] = v);
-                                }
-                            } />
-                        </div>
+                        <div class="stat"><strong>"INT"</strong><input aria-label="Atributo INT" type="number" prop:value=move || sheet.get().stats[0].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[0] = v); } } /></div>
+                        <div class="stat"><strong>"FIS"</strong><input aria-label="Atributo FIS" type="number" prop:value=move || sheet.get().stats[1].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[1] = v); } } /></div>
+                        <div class="stat"><strong>"DOM"</strong><input aria-label="Atributo DOM" type="number" prop:value=move || sheet.get().stats[2].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[2] = v); } } /></div>
+                        <div class="stat"><strong>"VEL"</strong><input aria-label="Atributo VEL" type="number" prop:value=move || sheet.get().stats[3].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[3] = v); } } /></div>
+                        <div class="stat"><strong>"HAB"</strong><input aria-label="Atributo HAB" type="number" prop:value=move || sheet.get().stats[4].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[4] = v); } } /></div>
                     </div>
                 </Show>
 
                 <Show when=move || tab.get() == 2>
                     <h2>"Anotações"</h2>
                     <p class="hint">"Escreva.."</p>
-                    <textarea
-                        class="notes"
-                        rows="16"
-                        placeholder="Escreva aqui..."
-                        prop:value=move || sheet.get().notes.clone()
-                        on:input=move |ev| sheet.update(|s| s.notes = event_target_value(&ev))
-                    ></textarea>
+                    <textarea class="notes" rows="16" placeholder="Escreva aqui..." prop:value=move || sheet.get().notes.clone() on:input=move |ev| sheet.update(|s| s.notes = event_target_value(&ev))></textarea>
                     <inventory::Inventory sheet=sheet />
                 </Show>
             </section>
 
             <footer class="account-footer">
                 <div class="account-footer-actions">
-                    <Show when=move || !resource_editing.get()>
+                    <Show when=move || tab.get() == 1 && !resource_editing.get()>
                         <button
                             type="button"
                             class="resource-edit"
                             disabled=move || saving.get()
                             on:click=move |_| {
                                 sheet.update(|s| {
-                                    if s.pv_max <= 0 {
-                                        s.pv_max = s.pv;
-                                    }
-                                    if s.san_max <= 0 {
-                                        s.san_max = s.san;
-                                    }
-                                    if s.pm_max <= 0 {
-                                        s.pm_max = s.pm;
-                                    }
+                                    if s.pv_max <= 0 { s.pv_max = s.pv; }
+                                    if s.san_max <= 0 { s.san_max = s.san; }
+                                    if s.pm_max <= 0 { s.pm_max = s.pm; }
                                 });
-
                                 resource_editing.set(true);
-                                save_status.set(
-                                    "Edite os valores máximos e clique em Salvar ficha.".to_string()
-                                );
+                                save_status.set("Edite os valores máximos e clique em Salvar ficha.".to_string());
                             }
                         >
                             "Editar máximos"
@@ -626,42 +480,28 @@ fn SheetApp(
 
                     <button
                         type="button"
+                        class="resource-edit"
                         disabled=move || saving.get()
                         on:click=move |_| {
                             let current_sheet = sheet.get();
                             let current_session = session.clone();
                             let current_id = character_id.clone();
-
                             let name = current_sheet.name.clone();
                             let data = match serde_json::to_value(&current_sheet) {
                                 Ok(value) => value,
-                                Err(error) => {
-                                    save_status.set(format!("Erro: {}", error));
-                                    return;
-                                }
+                                Err(error) => { save_status.set(format!("Erro: {}", error)); return; }
                             };
-
                             saving.set(true);
                             save_status.set("Salvando...".to_string());
-
                             spawn_local(async move {
-                                let result = cloud::update_character(
-                                    &current_session,
-                                    &current_id,
-                                    &name,
-                                    data,
-                                ).await;
-
+                                let result = cloud::update_character(&current_session, &current_id, &name, data).await;
                                 match result {
                                     Ok(()) => {
                                         save_status.set("Ficha salva na nuvem.".to_string());
                                         resource_editing.set(false);
                                     }
-                                    Err(error) => {
-                                        save_status.set(format!("Erro ao salvar: {}", error));
-                                    }
+                                    Err(error) => save_status.set(format!("Erro ao salvar: {}", error)),
                                 }
-
                                 saving.set(false);
                             });
                         }
@@ -671,12 +511,12 @@ fn SheetApp(
 
                     <button
                         type="button"
+                        class="resource-edit"
                         on:click=move |_| on_logout.run(())
                     >
                         "Sair da conta"
                     </button>
                 </div>
-
                 <span>{move || save_status.get()}</span>
             </footer>
         </main>
@@ -685,14 +525,10 @@ fn SheetApp(
 
 #[component]
 fn App() -> impl IntoView {
-    let account = RwSignal::new(
-        None::<(auth::AuthSession, Sheet, String)>
-    );
-
+    let account = RwSignal::new(None::<(auth::AuthSession, Sheet, String)>);
     let loading = RwSignal::new(true);
     let busy = RwSignal::new(false);
     let register_mode = RwSignal::new(false);
-
     let username = RwSignal::new(String::new());
     let password = RwSignal::new(String::new());
     let error_message = RwSignal::new(String::new());
@@ -701,58 +537,34 @@ fn App() -> impl IntoView {
         spawn_local(async move {
             if auth::load_session().is_some() {
                 match auth::refresh_session().await {
-                    Ok(session) => {
-                        match prepare_account(session).await {
-                            Ok(data) => account.set(Some(data)),
-                            Err(error) => error_message.set(error),
-                        }
-                    }
-                    Err(error) => {
-                        error_message.set(error);
-                    }
+                    Ok(session) => match prepare_account(session).await {
+                        Ok(data) => account.set(Some(data)),
+                        Err(error) => error_message.set(error),
+                    },
+                    Err(error) => error_message.set(error),
                 }
             }
-
             loading.set(false);
         });
     });
 
     let submit_auth = move |_| {
-        if busy.get_untracked() {
-            return;
-        }
-
+        if busy.get_untracked() { return; }
         let user = username.get_untracked();
         let pass = password.get_untracked();
         let registering = register_mode.get_untracked();
-
         busy.set(true);
         error_message.set(String::new());
 
         spawn_local(async move {
-            let result = if registering {
-                auth::register(&user, &pass).await
-            } else {
-                auth::login(&user, &pass).await
-            };
-
+            let result = if registering { auth::register(&user, &pass).await } else { auth::login(&user, &pass).await };
             match result {
-                Ok(session) => {
-                    match prepare_account(session).await {
-                        Ok(data) => {
-                            account.set(Some(data));
-                        }
-                        Err(error) => {
-                            error_message.set(error);
-                        }
-                    }
-                }
-
-                Err(error) => {
-                    error_message.set(error);
-                }
+                Ok(session) => match prepare_account(session).await {
+                    Ok(data) => account.set(Some(data)),
+                    Err(error) => error_message.set(error),
+                },
+                Err(error) => error_message.set(error),
             }
-
             busy.set(false);
         });
     };
@@ -770,113 +582,39 @@ fn App() -> impl IntoView {
     view! {
         <Show
             when=move || !loading.get()
-            fallback=|| view! {
-                <main class="auth-screen">
-                    <p>"Carregando..."</p>
-                </main>
-            }
+            fallback=|| view! { <main class="auth-screen"><p>"Carregando..."</p></main> }
         >
-            {move || {
-                match account.get() {
-                    Some((session, initial_sheet, character_id)) => {
-                        view! {
-                            <SheetApp
-                                initial_sheet=initial_sheet
-                                session=session
-                                character_id=character_id
-                                on_logout=logout
-                            />
-                        }.into_any()
-                    }
-
-                    None => {
-                        view! {
-                            <main class="auth-screen">
-                                <section class="auth-card">
-                                    <h1>"SAMSARA"</h1>
-                                    <p>"Character Sheet Manager"</p>
-
-                                    <h2>
-                                        {move || if register_mode.get() {
-                                            "Criar conta"
-                                        } else {
-                                            "Entrar"
-                                        }}
-                                    </h2>
-
-                                    <label>
-                                        "Nome de usuário"
-                                        <input
-                                            type="text"
-                                            placeholder="Seu usuário"
-                                            autocomplete="username"
-                                            prop:value=move || username.get()
-                                            on:input=move |ev| {
-                                                username.set(event_target_value(&ev));
-                                            }
-                                        />
-                                    </label>
-
-                                    <label>
-                                        "Senha"
-                                        <input
-                                            type="password"
-                                            placeholder="Sua senha"
-                                            autocomplete=move || {
-                                                if register_mode.get() {
-                                                    "new-password"
-                                                } else {
-                                                    "current-password"
-                                                }
-                                            }
-                                            prop:value=move || password.get()
-                                            on:input=move |ev| {
-                                                password.set(event_target_value(&ev));
-                                            }
-                                        />
-                                    </label>
-
-                                    <p class="auth-error">
-                                        {move || error_message.get()}
-                                    </p>
-
-                                    <button
-                                        type="button"
-                                        disabled=move || busy.get()
-                                        on:click=submit_auth
-                                    >
-                                        {move || {
-                                            if busy.get() {
-                                                "Aguarde..."
-                                            } else if register_mode.get() {
-                                                "Cadastrar"
-                                            } else {
-                                                "Entrar"
-                                            }
-                                        }}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        class="auth-switch"
-                                        on:click=move |_| {
-                                            register_mode.update(|v| *v = !*v);
-                                            error_message.set(String::new());
-                                        }
-                                    >
-                                        {move || {
-                                            if register_mode.get() {
-                                                "Já tenho uma conta"
-                                            } else {
-                                                "Criar uma conta"
-                                            }
-                                        }}
-                                    </button>
-                                </section>
-                            </main>
-                        }.into_any()
-                    }
-                }
+            {move || match account.get() {
+                Some((session, initial_sheet, character_id)) => view! {
+                    <SheetApp initial_sheet=initial_sheet session=session character_id=character_id on_logout=logout />
+                }.into_any(),
+                None => view! {
+                    <main class="auth-screen">
+                        <section class="auth-card">
+                            <h1>"SAMSARA"</h1>
+                            <p>"Character Sheet Manager"</p>
+                            <h2>{move || if register_mode.get() { "Criar conta" } else { "Entrar" }}</h2>
+                            <label>
+                                "Nome de usuário"
+                                <input type="text" placeholder="Seu usuário" autocomplete="username" prop:value=move || username.get() on:input=move |ev| username.set(event_target_value(&ev)) />
+                            </label>
+                            <label>
+                                "Senha"
+                                <input type="password" placeholder="Sua senha" autocomplete=move || if register_mode.get() { "new-password" } else { "current-password" } prop:value=move || password.get() on:input=move |ev| password.set(event_target_value(&ev)) />
+                            </label>
+                            <p class="auth-error">{move || error_message.get()}</p>
+                            <button type="button" disabled=move || busy.get() on:click=submit_auth>
+                                {move || if busy.get() { "Aguarde..." } else if register_mode.get() { "Cadastrar" } else { "Entrar" }}
+                            </button>
+                            <button type="button" class="auth-switch" on:click=move |_| {
+                                register_mode.update(|v| *v = !*v);
+                                error_message.set(String::new());
+                            }>
+                                {move || if register_mode.get() { "Já tenho uma conta" } else { "Criar uma conta" }}
+                            </button>
+                        </section>
+                    </main>
+                }.into_any(),
             }}
         </Show>
     }
