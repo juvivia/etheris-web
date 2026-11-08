@@ -17,6 +17,14 @@ struct Sheet {
     pv: i32,
     san: i32,
     pm: i32,
+#[serde(default)]
+pv_max: i32,
+
+#[serde(default)]
+san_max: i32,
+
+#[serde(default)]
+pm_max: i32,
     stats: [i32; 5],
     abilities: String,
     capacity: u8,
@@ -43,6 +51,9 @@ impl Default for Sheet {
             pv: 0,
             san: 0,
             pm: 0,
+            pv_max: 0,
+            san_max: 0,
+            pm_max: 0,
             stats: [0; 5],
             abilities: String::new(),
             capacity: 3,
@@ -418,33 +429,174 @@ fn SheetApp(
                 <Show when=move || tab.get() == 1>
                     <h2>"Atributos"</h2>
 
-                    <h3>"Recursos"</h3>
-                    <div class="resource-grid">
-                        <label>
-                            "PV"
-                            <input type="number" prop:value=move || sheet.get().pv.to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.pv = v);
-                                }
-                            } />
-                        </label>
-                        <label>
-                            "SAN"
-                            <input type="number" prop:value=move || sheet.get().san.to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.san = v);
-                                }
-                            } />
-                        </label>
-                        <label>
-                            "PM"
-                            <input type="number" prop:value=move || sheet.get().pm.to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                    sheet.update(|s| s.pm = v);
-                                }
-                            } />
-                        </label>
-                    </div>
+                  
+{
+    let initial = sheet.get_untracked();
+
+    let pv_max_edit = RwSignal::new(
+        if initial.pv_max > 0 { initial.pv_max } else { initial.pv }
+    );
+    let san_max_edit = RwSignal::new(
+        if initial.san_max > 0 { initial.san_max } else { initial.san }
+    );
+    let pm_max_edit = RwSignal::new(
+        if initial.pm_max > 0 { initial.pm_max } else { initial.pm }
+    );
+
+    let resource_editing = RwSignal::new(false);
+
+    view! {
+        <div class="resource-heading">
+            <h3>"Recursos"</h3>
+
+            <button
+                type="button"
+                class="resource-edit"
+                class:resource-edit-active=move || resource_editing.get()
+                on:click=move |_| {
+                    if resource_editing.get() {
+                        sheet.update(|s| {
+                            s.pv_max = pv_max_edit.get_untracked().max(0);
+                            s.san_max = san_max_edit.get_untracked().max(0);
+                            s.pm_max = pm_max_edit.get_untracked().max(0);
+                        });
+
+                        resource_editing.set(false);
+                    } else {
+                        let current = sheet.get_untracked();
+
+                        pv_max_edit.set(
+                            if current.pv_max > 0 {
+                                current.pv_max
+                            } else {
+                                current.pv
+                            }
+                        );
+
+                        san_max_edit.set(
+                            if current.san_max > 0 {
+                                current.san_max
+                            } else {
+                                current.san
+                            }
+                        );
+
+                        pm_max_edit.set(
+                            if current.pm_max > 0 {
+                                current.pm_max
+                            } else {
+                                current.pm
+                            }
+                        );
+
+                        resource_editing.set(true);
+                    }
+                }
+            >
+                {move || {
+                    if resource_editing.get() {
+                        "Salvar"
+                    } else {
+                        "Editar"
+                    }
+                }}
+            </button>
+        </div>
+
+        <div class="resource-grid">
+            <label class="resource-card">
+                "PV"
+
+                <input
+                    type="number"
+                    aria-label="PV atual"
+                    prop:value=move || sheet.get().pv.to_string()
+                    on:input=move |ev| {
+                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                            sheet.update(|s| s.pv = v);
+                        }
+                    }
+                />
+
+                <span class="resource-max-label">"Máximo"</span>
+
+                <input
+                    class="resource-max-input"
+                    type="number"
+                    min="0"
+                    disabled=move || !resource_editing.get()
+                    prop:value=move || pv_max_edit.get().to_string()
+                    on:input=move |ev| {
+                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                            pv_max_edit.set(v.max(0));
+                        }
+                    }
+                />
+            </label>
+
+            <label class="resource-card">
+                "SAN"
+
+                <input
+                    type="number"
+                    aria-label="SAN atual"
+                    prop:value=move || sheet.get().san.to_string()
+                    on:input=move |ev| {
+                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                            sheet.update(|s| s.san = v);
+                        }
+                    }
+                />
+
+                <span class="resource-max-label">"Máximo"</span>
+
+                <input
+                    class="resource-max-input"
+                    type="number"
+                    min="0"
+                    disabled=move || !resource_editing.get()
+                    prop:value=move || san_max_edit.get().to_string()
+                    on:input=move |ev| {
+                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                            san_max_edit.set(v.max(0));
+                        }
+                    }
+                />
+            </label>
+
+            <label class="resource-card">
+                "PM"
+
+                <input
+                    type="number"
+                    aria-label="PM atual"
+                    prop:value=move || sheet.get().pm.to_string()
+                    on:input=move |ev| {
+                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                            sheet.update(|s| s.pm = v);
+                        }
+                    }
+                />
+
+                <span class="resource-max-label">"Máximo"</span>
+
+                <input
+                    class="resource-max-input"
+                    type="number"
+                    min="0"
+                    disabled=move || !resource_editing.get()
+                    prop:value=move || pm_max_edit.get().to_string()
+                    on:input=move |ev| {
+                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                            pm_max_edit.set(v.max(0));
+                        }
+                    }
+                />
+            </label>
+        </div>
+    }
+}
+
 
                     <h3>"Atributos"</h3>
                     <div class="stat-grid">
