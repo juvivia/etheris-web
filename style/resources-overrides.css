@@ -1,0 +1,23 @@
+/* Hide the redundant maximum label while keeping its input accessible. */
+.resource-max-label {
+    display: none;
+}
+
+/* Keep maximum values visually integrated with the resource card rather than
+   displaying them in a separate boxed field. */
+.resource-card .resource-max-input,
+.resource-card .resource-max-input:focus,
+.resource-card .resource-max-input:not(:disabled) {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.resource-card .resource-max-input {
+    padding: 5px;
+}
+
+.resource-card .resource-max-input:focus {
+    outline: none;
+}
