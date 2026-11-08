@@ -139,6 +139,7 @@ fn SheetApp(
     let save_status = RwSignal::new(String::new());
     let saving = RwSignal::new(false);
     let tab = RwSignal::new(0usize);
+    let resource_editing = RwSignal::new(false);
     let skill_name = RwSignal::new(String::new());
     let skill_description = RwSignal::new(String::new());
     let skill_form_open = RwSignal::new(false);
@@ -429,174 +430,110 @@ fn SheetApp(
                 <Show when=move || tab.get() == 1>
                     <h2>"Atributos"</h2>
 
-                  
-{
-    let initial = sheet.get_untracked();
+                    <div class="resource-heading">
+                        <h3>"Recursos"</h3>
+                    </div>
 
-    let pv_max_edit = RwSignal::new(
-        if initial.pv_max > 0 { initial.pv_max } else { initial.pv }
-    );
-    let san_max_edit = RwSignal::new(
-        if initial.san_max > 0 { initial.san_max } else { initial.san }
-    );
-    let pm_max_edit = RwSignal::new(
-        if initial.pm_max > 0 { initial.pm_max } else { initial.pm }
-    );
+                    <div class="resource-grid">
+                        <label class="resource-card">
+                            "PV"
 
-    let resource_editing = RwSignal::new(false);
+                            <input
+                                type="number"
+                                aria-label="PV atual"
+                                prop:value=move || sheet.get().pv.to_string()
+                                on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                        sheet.update(|s| s.pv = v);
+                                    }
+                                }
+                            />
 
-    view! {
-        <div class="resource-heading">
-            <h3>"Recursos"</h3>
+                            <span class="resource-max-label">"Máximo"</span>
 
-            <button
-                type="button"
-                class="resource-edit"
-                class:resource-edit-active=move || resource_editing.get()
-                on:click=move |_| {
-                    if resource_editing.get() {
-                        sheet.update(|s| {
-                            s.pv_max = pv_max_edit.get_untracked().max(0);
-                            s.san_max = san_max_edit.get_untracked().max(0);
-                            s.pm_max = pm_max_edit.get_untracked().max(0);
-                        });
+                            <input
+                                class="resource-max-input"
+                                type="number"
+                                min="0"
+                                disabled=move || !resource_editing.get()
+                                prop:value=move || {
+                                    let s = sheet.get();
+                                    if s.pv_max > 0 { s.pv_max } else { s.pv }.to_string()
+                                }
+                                on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                        sheet.update(|s| s.pv_max = v.max(0));
+                                    }
+                                }
+                            />
+                        </label>
 
-                        resource_editing.set(false);
-                    } else {
-                        let current = sheet.get_untracked();
+                        <label class="resource-card">
+                            "SAN"
 
-                        pv_max_edit.set(
-                            if current.pv_max > 0 {
-                                current.pv_max
-                            } else {
-                                current.pv
-                            }
-                        );
+                            <input
+                                type="number"
+                                aria-label="SAN atual"
+                                prop:value=move || sheet.get().san.to_string()
+                                on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                        sheet.update(|s| s.san = v);
+                                    }
+                                }
+                            />
 
-                        san_max_edit.set(
-                            if current.san_max > 0 {
-                                current.san_max
-                            } else {
-                                current.san
-                            }
-                        );
+                            <span class="resource-max-label">"Máximo"</span>
 
-                        pm_max_edit.set(
-                            if current.pm_max > 0 {
-                                current.pm_max
-                            } else {
-                                current.pm
-                            }
-                        );
+                            <input
+                                class="resource-max-input"
+                                type="number"
+                                min="0"
+                                disabled=move || !resource_editing.get()
+                                prop:value=move || {
+                                    let s = sheet.get();
+                                    if s.san_max > 0 { s.san_max } else { s.san }.to_string()
+                                }
+                                on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                        sheet.update(|s| s.san_max = v.max(0));
+                                    }
+                                }
+                            />
+                        </label>
 
-                        resource_editing.set(true);
-                    }
-                }
-            >
-                {move || {
-                    if resource_editing.get() {
-                        "Salvar"
-                    } else {
-                        "Editar"
-                    }
-                }}
-            </button>
-        </div>
+                        <label class="resource-card">
+                            "PM"
 
-        <div class="resource-grid">
-            <label class="resource-card">
-                "PV"
+                            <input
+                                type="number"
+                                aria-label="PM atual"
+                                prop:value=move || sheet.get().pm.to_string()
+                                on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                        sheet.update(|s| s.pm = v);
+                                    }
+                                }
+                            />
 
-                <input
-                    type="number"
-                    aria-label="PV atual"
-                    prop:value=move || sheet.get().pv.to_string()
-                    on:input=move |ev| {
-                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                            sheet.update(|s| s.pv = v);
-                        }
-                    }
-                />
+                            <span class="resource-max-label">"Máximo"</span>
 
-                <span class="resource-max-label">"Máximo"</span>
-
-                <input
-                    class="resource-max-input"
-                    type="number"
-                    min="0"
-                    disabled=move || !resource_editing.get()
-                    prop:value=move || pv_max_edit.get().to_string()
-                    on:input=move |ev| {
-                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                            pv_max_edit.set(v.max(0));
-                        }
-                    }
-                />
-            </label>
-
-            <label class="resource-card">
-                "SAN"
-
-                <input
-                    type="number"
-                    aria-label="SAN atual"
-                    prop:value=move || sheet.get().san.to_string()
-                    on:input=move |ev| {
-                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                            sheet.update(|s| s.san = v);
-                        }
-                    }
-                />
-
-                <span class="resource-max-label">"Máximo"</span>
-
-                <input
-                    class="resource-max-input"
-                    type="number"
-                    min="0"
-                    disabled=move || !resource_editing.get()
-                    prop:value=move || san_max_edit.get().to_string()
-                    on:input=move |ev| {
-                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                            san_max_edit.set(v.max(0));
-                        }
-                    }
-                />
-            </label>
-
-            <label class="resource-card">
-                "PM"
-
-                <input
-                    type="number"
-                    aria-label="PM atual"
-                    prop:value=move || sheet.get().pm.to_string()
-                    on:input=move |ev| {
-                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                            sheet.update(|s| s.pm = v);
-                        }
-                    }
-                />
-
-                <span class="resource-max-label">"Máximo"</span>
-
-                <input
-                    class="resource-max-input"
-                    type="number"
-                    min="0"
-                    disabled=move || !resource_editing.get()
-                    prop:value=move || pm_max_edit.get().to_string()
-                    on:input=move |ev| {
-                        if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                            pm_max_edit.set(v.max(0));
-                        }
-                    }
-                />
-            </label>
-        </div>
-    }
-}
-
+                            <input
+                                class="resource-max-input"
+                                type="number"
+                                min="0"
+                                disabled=move || !resource_editing.get()
+                                prop:value=move || {
+                                    let s = sheet.get();
+                                    if s.pm_max > 0 { s.pm_max } else { s.pm }.to_string()
+                                }
+                                on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                        sheet.update(|s| s.pm_max = v.max(0));
+                                    }
+                                }
+                            />
+                        </label>
+                    </div>
 
                     <h3>"Atributos"</h3>
                     <div class="stat-grid">
@@ -658,58 +595,89 @@ fn SheetApp(
             </section>
 
             <footer class="account-footer">
+                <div class="account-footer-actions">
+                    <Show when=move || !resource_editing.get()>
+                        <button
+                            type="button"
+                            class="resource-edit"
+                            disabled=move || saving.get()
+                            on:click=move |_| {
+                                sheet.update(|s| {
+                                    if s.pv_max <= 0 {
+                                        s.pv_max = s.pv;
+                                    }
+                                    if s.san_max <= 0 {
+                                        s.san_max = s.san;
+                                    }
+                                    if s.pm_max <= 0 {
+                                        s.pm_max = s.pm;
+                                    }
+                                });
+
+                                resource_editing.set(true);
+                                save_status.set(
+                                    "Edite os valores máximos e clique em Salvar ficha.".to_string()
+                                );
+                            }
+                        >
+                            "Editar máximos"
+                        </button>
+                    </Show>
+
+                    <button
+                        type="button"
+                        disabled=move || saving.get()
+                        on:click=move |_| {
+                            let current_sheet = sheet.get();
+                            let current_session = session.clone();
+                            let current_id = character_id.clone();
+
+                            let name = current_sheet.name.clone();
+                            let data = match serde_json::to_value(&current_sheet) {
+                                Ok(value) => value,
+                                Err(error) => {
+                                    save_status.set(format!("Erro: {}", error));
+                                    return;
+                                }
+                            };
+
+                            saving.set(true);
+                            save_status.set("Salvando...".to_string());
+
+                            spawn_local(async move {
+                                let result = cloud::update_character(
+                                    &current_session,
+                                    &current_id,
+                                    &name,
+                                    data,
+                                ).await;
+
+                                match result {
+                                    Ok(()) => {
+                                        save_status.set("Ficha salva na nuvem.".to_string());
+                                        resource_editing.set(false);
+                                    }
+                                    Err(error) => {
+                                        save_status.set(format!("Erro ao salvar: {}", error));
+                                    }
+                                }
+
+                                saving.set(false);
+                            });
+                        }
+                    >
+                        {move || if saving.get() { "Salvando..." } else { "Salvar ficha" }}
+                    </button>
+
+                    <button
+                        type="button"
+                        on:click=move |_| on_logout.run(())
+                    >
+                        "Sair da conta"
+                    </button>
+                </div>
+
                 <span>{move || save_status.get()}</span>
-
-                <button
-                    type="button"
-                    disabled=move || saving.get()
-                    on:click=move |_| {
-                        let current_sheet = sheet.get();
-                        let current_session = session.clone();
-                        let current_id = character_id.clone();
-
-                        let name = current_sheet.name.clone();
-                        let data = match serde_json::to_value(&current_sheet) {
-                            Ok(value) => value,
-                            Err(error) => {
-                                save_status.set(format!("Erro: {}", error));
-                                return;
-                            }
-                        };
-
-                        saving.set(true);
-                        save_status.set("Salvando...".to_string());
-
-                        spawn_local(async move {
-                            let result = cloud::update_character(
-                                &current_session,
-                                &current_id,
-                                &name,
-                                data,
-                            ).await;
-
-                            match result {
-                                Ok(()) => save_status.set(
-                                    "Ficha salva na nuvem.".to_string()
-                                ),
-                                Err(error) => save_status.set(
-                                    format!("Erro ao salvar: {}", error)
-                                ),
-                            }
-
-                            saving.set(false);
-                        });
-                    }
-                >
-                    {move || if saving.get() { "Salvando..." } else { "Salvar ficha" }}
-                </button>
-
-                <button
-                    type="button"
-                    on:click=move |_| on_logout.run(())
-                >
-                    "Sair da conta"
-                </button>
             </footer>
         </main>
     }
