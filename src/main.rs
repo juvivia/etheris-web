@@ -652,7 +652,7 @@ fn App() -> impl IntoView {
             when=move || !loading.get()
             fallback=|| view! {
                 <main class="auth-screen">
-                    <p>"Carregando SAMSARA..."</p>
+                    <p>"Carregando..."</p>
                 </main>
             }
         >
@@ -674,7 +674,7 @@ fn App() -> impl IntoView {
                             <main class="auth-screen">
                                 <section class="auth-card">
                                     <h1>"SAMSARA"</h1>
-                                    <p>"O RPG"</p>
+                                    <p>"Character Sheet Manager"</p>
 
                                     <h2>
                                         {move || if register_mode.get() {
