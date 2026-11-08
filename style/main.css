@@ -162,6 +162,13 @@ footer { border-top: 1px solid #30383e; padding-top: 20px; }
     gap: 12px;
 }
 
+.account-footer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
 
 /* ================================
    INVENTÁRIO — GRID
