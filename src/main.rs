@@ -266,7 +266,7 @@ fn SheetApp(
             <header class="topbar">
                 <div>
                     <h1>"SAMSARA"</h1>
-                    <p>"O RPG"</p>
+                    <p>"Character Sheet Manager"</p>
                 </div>
                 <span class="level">"NÍVEL " {move || sheet.get().level}</span>
             </header>
