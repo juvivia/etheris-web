@@ -1,4 +1,5 @@
-/* Keep the previous resource-card polish while tightening the inventory dimensions layout. */
+/* Keep the resource maximum as a quieter second line, separated from the
+   current value by a subtle rule instead of a boxed input. */
 .resource-max-label {
     display: none;
 }
@@ -30,6 +31,7 @@
     color: #b4d1c2;
 }
 
+/* Center the inventory dimensions as a single, balanced width × height pair. */
 .inventory-settings {
     display: flex;
     flex-direction: column;
@@ -38,10 +40,11 @@
 }
 
 .inventory-dimensions {
-    display: flex;
+    display: grid;
+    grid-template-columns: 82px 24px 82px;
+    column-gap: 12px;
     align-items: end;
     justify-content: center;
-    gap: 12px;
     width: 100%;
 }
 
@@ -49,9 +52,9 @@
     display: flex;
     flex-direction: column;
     gap: 7px;
-    min-width: 110px;
-    max-width: 150px;
-    flex: 0 0 auto;
+    width: 82px;
+    min-width: 82px;
+    max-width: 82px;
 }
 
 .inventory-dimension-label {
@@ -60,10 +63,14 @@
 }
 
 .inventory-dimensions-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
     color: #b4d1c2;
-    font-size: 26px;
+    font-size: 20px;
     line-height: 1;
-    padding-bottom: 12px;
+    margin-bottom: 8px;
     user-select: none;
 }
 
@@ -71,20 +78,22 @@
     width: 100%;
     min-width: 0;
     text-align: center;
-    padding: 10px 8px;
+    padding: 8px 6px;
 }
 
 .inventory-settings > label:last-child {
-    grid-column: auto;
     width: 100%;
 }
 
 @media (max-width: 540px) {
     .inventory-dimensions {
-        gap: 8px;
+        grid-template-columns: 76px 24px 76px;
+        column-gap: 8px;
     }
 
     .inventory-dimension-field {
-        min-width: 94px;
+        width: 76px;
+        min-width: 76px;
+        max-width: 76px;
     }
 }
