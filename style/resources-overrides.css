@@ -31,3 +31,63 @@
     border-top-color: #536b60;
     color: #b4d1c2;
 }
+
+/* Bring inventory width and height together as one compact W × H control. */
+.inventory-settings {
+    grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+    align-items: center;
+}
+
+.inventory-settings > label:nth-child(1),
+.inventory-settings > label:nth-child(2) {
+    position: relative;
+    width: 100%;
+    gap: 0;
+    font-size: 0;
+}
+
+.inventory-settings > label:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.inventory-settings > label:nth-child(2) {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.inventory-settings > label:nth-child(1)::after {
+    content: "×";
+    position: absolute;
+    top: 50%;
+    right: -18px;
+    color: #b4d1c2;
+    font-size: 16px;
+    font-weight: 500;
+    transform: translateY(-50%);
+}
+
+.inventory-settings > label:nth-child(1) input,
+.inventory-settings > label:nth-child(2) input {
+    width: 82px;
+    max-width: 100%;
+    align-self: end;
+    padding: 8px 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.inventory-settings > label:nth-child(2) input {
+    align-self: start;
+}
+
+.inventory-settings > label:last-child {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+@media (max-width: 540px) {
+    .inventory-settings {
+        grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+    }
+}
