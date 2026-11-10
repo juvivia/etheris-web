@@ -1,7 +1,6 @@
 /* Desktop-only layout refinements. Mobile styles remain untouched. */
 @media (min-width: 900px) {
-    /* Keep the width and height controls together across the full inventory
-       settings row; otherwise the parent grid narrows them into a single column. */
+    /* Keep width, multiplication sign, and height on one centered row. */
     .inventory-settings > .inventory-dimensions {
         display: flex !important;
         flex-direction: row !important;
@@ -37,23 +36,33 @@
         justify-content: center !important;
         width: 24px !important;
         height: 38px !important;
-        margin: 0 0 0 !important;
+        margin: 0 !important;
         padding: 0 0 10px !important;
         line-height: 1 !important;
         text-align: center !important;
     }
 
-    /* Give notes and inventory a side-by-side desktop layout. */
+    /* Put notes and inventory in two columns, keeping the notes title,
+       helper text, and textarea together without an empty grid row. */
     .content:has(.notes) {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
         align-items: start;
         column-gap: 28px;
+        row-gap: 0;
     }
 
-    .content:has(.notes) > h2,
+    .content:has(.notes) > h2 {
+        grid-column: 1;
+        grid-row: 1;
+        margin-bottom: 12px;
+    }
+
     .content:has(.notes) > .hint {
-        grid-column: 1 / -1;
+        grid-column: 1;
+        grid-row: 2;
+        margin: 0 0 8px;
     }
 
     .content:has(.notes) > .notes {
@@ -61,11 +70,12 @@
         grid-row: 3;
         width: 100%;
         min-height: 360px;
+        margin: 0;
     }
 
     .content:has(.notes) > .inventory-section {
         grid-column: 2;
-        grid-row: 2 / span 2;
+        grid-row: 1 / span 3;
         min-width: 0;
         margin-top: 0;
     }
