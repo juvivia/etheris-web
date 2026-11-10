@@ -1,99 +1,67 @@
-/* Keep the resource maximum as a quieter second line, separated from the
-   current value by a subtle rule instead of a boxed input. */
-.resource-max-label {
-    display: none;
-}
-
-.resource-card .resource-max-input,
-.resource-card .resource-max-input:focus,
-.resource-card .resource-max-input:not(:disabled) {
-    background: transparent;
-    border: 0;
-    border-top: 1px solid #30383e;
-    border-radius: 0;
-    box-shadow: none;
-}
-
-.resource-card .resource-max-input {
-    margin-top: 2px;
-    padding: 9px 5px 5px;
-    color: #879991;
-    font-size: 15px;
-    transition: color 0.2s, border-color 0.2s;
-}
-
-.resource-card .resource-max-input:focus {
-    outline: none;
-}
-
-.resource-card .resource-max-input:not(:disabled) {
-    border-top-color: #536b60;
-    color: #b4d1c2;
-}
-
-/* Center the inventory dimensions as a single, balanced width × height pair. */
-.inventory-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: 18px 0;
-}
-
-.inventory-dimensions {
-    display: grid;
-    grid-template-columns: 82px 24px 82px;
-    column-gap: 12px;
-    align-items: end;
-    justify-content: center;
-    width: 100%;
-}
-
-.inventory-dimension-field {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    width: 82px;
-    min-width: 82px;
-    max-width: 82px;
-}
-
-.inventory-dimension-label {
-    color: #a8b1b8;
-    font-size: 12px;
-}
-
-.inventory-dimensions-separator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    color: #b4d1c2;
-    font-size: 20px;
-    line-height: 1;
-    margin-bottom: 8px;
-    user-select: none;
-}
-
-.inventory-dimension-field input {
-    width: 100%;
-    min-width: 0;
-    text-align: center;
-    padding: 8px 6px;
-}
-
-.inventory-settings > label:last-child {
-    width: 100%;
-}
-
-@media (max-width: 540px) {
-    .inventory-dimensions {
-        grid-template-columns: 76px 24px 76px;
-        column-gap: 8px;
+/* Desktop-only layout refinements. Mobile styles remain untouched. */
+@media (min-width: 900px) {
+    /* Keep width, multiplication sign, and height on one centered row. */
+    .inventory-settings .inventory-dimensions {
+        display: grid !important;
+        grid-template-columns: 150px 28px 150px !important;
+        align-items: end !important;
+        justify-content: center !important;
+        column-gap: 10px !important;
+        width: 100% !important;
     }
 
-    .inventory-dimension-field {
-        width: 76px;
-        min-width: 76px;
-        max-width: 76px;
+    .inventory-settings .inventory-dimension-field {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 150px !important;
+        min-width: 150px !important;
+        max-width: 150px !important;
+        gap: 7px !important;
+        font-size: 12px !important;
+    }
+
+    .inventory-settings .inventory-dimensions-separator {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 28px !important;
+        height: 38px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        text-align: center !important;
+    }
+
+    .inventory-settings .inventory-dimension-field input {
+        width: 100% !important;
+        min-width: 0 !important;
+        text-align: center !important;
+    }
+
+    /* Give notes and inventory a side-by-side desktop layout. */
+    .content:has(.notes) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        column-gap: 28px;
+    }
+
+    .content:has(.notes) > h2,
+    .content:has(.notes) > .hint {
+        grid-column: 1 / -1;
+    }
+
+    .content:has(.notes) > .notes {
+        grid-column: 1;
+        grid-row: 3;
+        width: 100%;
+        min-height: 360px;
+    }
+
+    .content:has(.notes) > .inventory-section {
+        grid-column: 2;
+        grid-row: 2 / span 2;
+        min-width: 0;
+        margin-top: 0;
     }
 }
