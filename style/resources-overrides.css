@@ -1,40 +1,45 @@
 /* Desktop-only layout refinements. Mobile styles remain untouched. */
 @media (min-width: 900px) {
-    /* Keep width, multiplication sign, and height on one centered row. */
-    .inventory-settings .inventory-dimensions {
-        display: grid !important;
-        grid-template-columns: 150px 28px 150px !important;
-        align-items: end !important;
+    /* Keep the width and height controls together across the full inventory
+       settings row; otherwise the parent grid narrows them into a single column. */
+    .inventory-settings > .inventory-dimensions {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: flex-end !important;
         justify-content: center !important;
-        column-gap: 10px !important;
+        grid-column: 1 / -1 !important;
         width: 100% !important;
+        gap: 10px !important;
     }
 
     .inventory-settings .inventory-dimension-field {
         display: flex !important;
+        flex: 0 1 150px !important;
         flex-direction: column !important;
         width: 150px !important;
-        min-width: 150px !important;
+        min-width: 0 !important;
         max-width: 150px !important;
         gap: 7px !important;
         font-size: 12px !important;
     }
 
-    .inventory-settings .inventory-dimensions-separator {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 28px !important;
-        height: 38px !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-        text-align: center !important;
-    }
-
     .inventory-settings .inventory-dimension-field input {
         width: 100% !important;
         min-width: 0 !important;
+        text-align: center !important;
+    }
+
+    .inventory-settings .inventory-dimensions-separator {
+        display: flex !important;
+        flex: 0 0 24px !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 24px !important;
+        height: 38px !important;
+        margin: 0 0 0 !important;
+        padding: 0 0 10px !important;
+        line-height: 1 !important;
         text-align: center !important;
     }
 
