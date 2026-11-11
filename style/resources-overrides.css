@@ -47,8 +47,9 @@
     .content:has(.notes) {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        grid-template-rows: auto auto auto;
+        grid-template-rows: max-content max-content minmax(360px, auto);
         align-items: start;
+        align-content: start;
         column-gap: 28px;
         row-gap: 0;
     }
