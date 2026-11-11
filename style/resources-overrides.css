@@ -42,41 +42,38 @@
         text-align: center !important;
     }
 
-    /* Put notes and inventory in two columns, keeping the notes title,
-       helper text, and textarea together without an empty grid row. */
-    .content:has(.notes) {
+    /* Each column is a single independent block. The inventory no longer
+       spans the notes rows, so its height cannot create gaps on the left. */
+    .content:has(.notes-panel) {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        grid-template-rows: max-content max-content minmax(360px, auto);
         align-items: start;
-        align-content: start;
         column-gap: 28px;
-        row-gap: 0;
     }
 
-    .content:has(.notes) > h2 {
+    .content:has(.notes-panel) > .notes-panel {
         grid-column: 1;
-        grid-row: 1;
-        margin-bottom: 12px;
+        min-width: 0;
+        align-self: start;
     }
 
-    .content:has(.notes) > .hint {
-        grid-column: 1;
-        grid-row: 2;
+    .notes-panel h2 {
+        margin: 0 0 12px;
+    }
+
+    .notes-panel > .hint {
         margin: 0 0 8px;
     }
 
-    .content:has(.notes) > .notes {
-        grid-column: 1;
-        grid-row: 3;
+    .notes-panel > .notes {
+        display: block;
         width: 100%;
         min-height: 360px;
         margin: 0;
     }
 
-    .content:has(.notes) > .inventory-section {
+    .content:has(.notes-panel) > .inventory-section {
         grid-column: 2;
-        grid-row: 1 / span 3;
         min-width: 0;
         margin-top: 0;
     }
