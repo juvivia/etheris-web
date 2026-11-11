@@ -450,9 +450,11 @@ fn SheetApp(
                 </Show>
 
                 <Show when=move || tab.get() == 2>
-                    <h2>"Anotações"</h2>
-                    <p class="hint">"Escreva.."</p>
-                    <textarea class="notes" rows="16" placeholder="Escreva aqui..." prop:value=move || sheet.get().notes.clone() on:input=move |ev| sheet.update(|s| s.notes = event_target_value(&ev))></textarea>
+                    <div class="notes-panel">
+                        <h2>"Anotações"</h2>
+                        <p class="hint">"Escreva.."</p>
+                        <textarea class="notes" rows="16" placeholder="Escreva aqui..." prop:value=move || sheet.get().notes.clone() on:input=move |ev| sheet.update(|s| s.notes = event_target_value(&ev))></textarea>
+                    </div>
                     <inventory::Inventory sheet=sheet />
                 </Show>
             </section>
