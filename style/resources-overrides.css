@@ -122,3 +122,52 @@
         text-align: center;
     }
 }
+
+
+/* Desktop: editor do item ao lado direito do tabuleiro. */
+@media (min-width: 900px) {
+    .inventory-section {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(150px, 0.8fr);
+        column-gap: 14px;
+        align-items: start;
+    }
+
+    .inventory-section > .section-heading,
+    .inventory-section > .hint,
+    .inventory-section > .inventory-settings {
+        grid-column: 1 / -1;
+    }
+
+    .inventory-section > .inventory-grid {
+        grid-column: 1;
+        grid-row: 4;
+        min-width: 0;
+        align-self: start;
+    }
+
+    .inventory-section > .inventory-editor,
+    .inventory-section > p.hint:last-child {
+        grid-column: 2;
+        grid-row: 4;
+        min-width: 0;
+        margin-top: 20px;
+    }
+
+    .inventory-section > .inventory-editor {
+        margin-top: 20px;
+        padding: 14px;
+    }
+
+    .inventory-section > .inventory-editor .section-heading {
+        gap: 8px;
+    }
+
+    .inventory-section > .inventory-editor .section-heading h3 {
+        font-size: 13px;
+    }
+
+    .inventory-section > .inventory-editor label {
+        overflow-wrap: anywhere;
+    }
+}
