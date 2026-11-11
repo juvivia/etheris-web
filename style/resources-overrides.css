@@ -78,3 +78,47 @@
         margin-top: 0;
     }
 }
+
+
+/* Mobile: mantém Largura e Altura lado a lado sem alterar o desktop. */
+@media (max-width: 540px) {
+    .inventory-settings > .inventory-dimensions {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-end;
+        justify-content: center;
+        grid-column: 1 / -1;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .inventory-settings .inventory-dimension-field {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        gap: 7px;
+    }
+
+    .inventory-settings .inventory-dimension-field input {
+        width: 100%;
+        min-width: 0;
+        text-align: center;
+    }
+
+    .inventory-settings .inventory-dimensions-separator {
+        display: flex;
+        flex: 0 0 20px;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 38px;
+        margin: 0;
+        padding: 0 0 10px;
+        line-height: 1;
+        text-align: center;
+    }
+}
