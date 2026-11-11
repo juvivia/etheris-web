@@ -44,7 +44,7 @@ select:disabled {
 .stat { border: 1px solid #343c43; border-radius: 8px; text-align: center; padding: 12px 7px; }
 .stat strong { font-size: 11px; color: #aeb9c1; }
 .stat input { margin-top: 8px; text-align: center; border: none; background: transparent; padding: 3px; font-size: 23px; }
-textarea { resize: vertical; line-height: 1.6; }
+textarea { resize: vertical; line-height: 2.1; }
 .notes { min-height: 300px; }
 .capacity { max-width: 200px; }
 .item-list { display: grid; gap: 12px; margin-top: 20px; }
