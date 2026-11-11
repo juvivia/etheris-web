@@ -72,10 +72,23 @@
         margin: 0;
     }
 
+    /* Keep the inventory in the right column, but let its editor
+       occupy a centered full-width row below Notes and Inventory. */
     .content:has(.notes-panel) > .inventory-section {
+        display: contents;
+    }
+
+    .inventory-main {
         grid-column: 2;
         min-width: 0;
-        margin-top: 0;
+    }
+
+    .inventory-section > .inventory-editor,
+    .inventory-section > .hint {
+        grid-column: 1 / -1;
+        width: min(100%, 480px);
+        justify-self: center;
+        margin-top: 24px;
     }
 }
 
