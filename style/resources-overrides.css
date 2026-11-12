@@ -293,3 +293,15 @@
         height: 132px;
     }
 }
+
+
+/* Centraliza somente o campo Nível no perfil do personagem. */
+.character-profile-fields label:last-child {
+    align-items: center;
+    text-align: center;
+}
+
+.character-profile-fields label:last-child input {
+    width: 100%;
+    text-align: center;
+}
