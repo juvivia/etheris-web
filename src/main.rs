@@ -403,7 +403,6 @@ fn SheetApp(
                             <input type="number" aria-label="PV atual" prop:value=move || sheet.get().pv.to_string() on:input=move |ev| {
                                 if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.pv = v); }
                             } />
-                            <span class="resource-max-label">"Máximo"</span>
                             <input class="resource-max-input" type="number" min="0" disabled=move || !resource_editing.get() prop:value=move || {
                                 let s = sheet.get();
                                 if s.pv_max > 0 { s.pv_max } else { s.pv }.to_string()
@@ -416,7 +415,6 @@ fn SheetApp(
                             <input type="number" aria-label="SAN atual" prop:value=move || sheet.get().san.to_string() on:input=move |ev| {
                                 if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.san = v); }
                             } />
-                            <span class="resource-max-label">"Máximo"</span>
                             <input class="resource-max-input" type="number" min="0" disabled=move || !resource_editing.get() prop:value=move || {
                                 let s = sheet.get();
                                 if s.san_max > 0 { s.san_max } else { s.san }.to_string()
@@ -429,7 +427,6 @@ fn SheetApp(
                             <input type="number" aria-label="PM atual" prop:value=move || sheet.get().pm.to_string() on:input=move |ev| {
                                 if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.pm = v); }
                             } />
-                            <span class="resource-max-label">"Máximo"</span>
                             <input class="resource-max-input" type="number" min="0" disabled=move || !resource_editing.get() prop:value=move || {
                                 let s = sheet.get();
                                 if s.pm_max > 0 { s.pm_max } else { s.pm }.to_string()
@@ -441,11 +438,11 @@ fn SheetApp(
 
                     <h3>"Atributos"</h3>
                     <div class="stat-grid">
-                        <div class="stat"><strong>"INT"</strong><input aria-label="Atributo INT" type="number" prop:value=move || sheet.get().stats[0].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[0] = v); } } /></div>
-                        <div class="stat"><strong>"FIS"</strong><input aria-label="Atributo FIS" type="number" prop:value=move || sheet.get().stats[1].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[1] = v); } } /></div>
-                        <div class="stat"><strong>"DOM"</strong><input aria-label="Atributo DOM" type="number" prop:value=move || sheet.get().stats[2].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[2] = v); } } /></div>
-                        <div class="stat"><strong>"VEL"</strong><input aria-label="Atributo VEL" type="number" prop:value=move || sheet.get().stats[3].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[3] = v); } } /></div>
-                        <div class="stat"><strong>"HAB"</strong><input aria-label="Atributo HAB" type="number" prop:value=move || sheet.get().stats[4].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[4] = v); } } /></div>
+                        <div class="stat"><strong>"INT"</strong><input aria-label="Atributo INT" type="number" disabled=move || !resource_editing.get() prop:value=move || sheet.get().stats[0].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[0] = v); } } /></div>
+                        <div class="stat"><strong>"FIS"</strong><input aria-label="Atributo FIS" type="number" disabled=move || !resource_editing.get() prop:value=move || sheet.get().stats[1].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[1] = v); } } /></div>
+                        <div class="stat"><strong>"DOM"</strong><input aria-label="Atributo DOM" type="number" disabled=move || !resource_editing.get() prop:value=move || sheet.get().stats[2].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[2] = v); } } /></div>
+                        <div class="stat"><strong>"VEL"</strong><input aria-label="Atributo VEL" type="number" disabled=move || !resource_editing.get() prop:value=move || sheet.get().stats[3].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[3] = v); } } /></div>
+                        <div class="stat"><strong>"HAB"</strong><input aria-label="Atributo HAB" type="number" disabled=move || !resource_editing.get() prop:value=move || sheet.get().stats[4].to_string() on:input=move |ev| { if let Ok(v) = event_target_value(&ev).parse::<i32>() { sheet.update(|s| s.stats[4] = v); } } /></div>
                     </div>
                 </Show>
 
@@ -473,7 +470,7 @@ fn SheetApp(
                                     if s.pm_max <= 0 { s.pm_max = s.pm; }
                                 });
                                 resource_editing.set(true);
-                                save_status.set("Edite os valores máximos e clique em Salvar ficha.".to_string());
+                                save_status.set("Edite os valores máximos e os atributos e clique em Salvar ficha.".to_string());
                             }
                         >
                             "Editar máximos"
