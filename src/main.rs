@@ -66,6 +66,66 @@ impl Default for Sheet {
     }
 }
 
+
+fn handle_portrait_change(
+    ev: web_sys::Event,
+    session: auth::AuthSession,
+    character_id: String,
+    sheet: RwSignal<Sheet>,
+    save_status: RwSignal<String>,
+    portrait_url: RwSignal<Option<String>>,
+    portrait_uploading: RwSignal<bool>,
+) {
+    let input = ev.target().and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok());
+    let file = input.and_then(|input| input.files().and_then(|files| files.get(0)));
+    let Some(file) = file else { return; };
+
+    let mime = file.type_();
+    let extension = match mime.as_str() {
+        "image/jpeg" => String::from("jpg"),
+        "image/png" => String::from("png"),
+        "image/webp" => String::from("webp"),
+        _ => {
+            save_status.set("Formato inválido. Use JPG, PNG ou WEBP.".to_string());
+            return;
+        }
+    };
+
+    if file.size() > 5.0 * 1024.0 * 1024.0 {
+        save_status.set("A imagem deve ter no máximo 5 MB.".to_string());
+        return;
+    }
+
+    portrait_uploading.set(true);
+    save_status.set("Enviando imagem...".to_string());
+
+    spawn_local(async move {
+        let result = async {
+            let buffer = JsFuture::from(file.array_buffer()).await
+                .map_err(|_| "Não foi possível ler a imagem.".to_string())?;
+            let bytes = Uint8Array::new(&buffer).to_vec();
+            cloud::upload_portrait(
+                &session,
+                &character_id,
+                &bytes,
+                &mime,
+                &extension,
+            ).await
+        }.await;
+
+        match result {
+            Ok((path, url)) => {
+                sheet.update(|s| s.portrait_path = Some(path));
+                portrait_url.set(Some(url));
+                save_status.set("Imagem enviada. Clique em Salvar ficha para confirmar.".to_string());
+            }
+            Err(error) => save_status.set(format!("Erro ao enviar imagem: {}", error)),
+        }
+
+        portrait_uploading.set(false);
+    });
+}
+
 async fn prepare_account(
     session: auth::AuthSession,
 ) -> Result<(auth::AuthSession, Sheet, String), String> {
@@ -157,71 +217,6 @@ fn SheetApp(
             }
         });
     }
-
-    // Estes clones ficam no ambiente da closure reutilizável do evento.
-    // Os valores de cada arquivo selecionado são movidos apenas para sua tarefa assíncrona.
-    let portrait_session = session.clone();
-    let portrait_character_id = character_id.clone();
-
-    let handle_portrait_change = move |ev: web_sys::Event| {
-        let input = ev.target().and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok());
-        let file = input.and_then(|input| input.files().and_then(|files| files.get(0)));
-        let Some(file) = file else { return; };
-
-        let mime = file.type_();
-        let extension = match mime.as_str() {
-            "image/jpeg" => String::from("jpg"),
-            "image/png" => String::from("png"),
-            "image/webp" => String::from("webp"),
-            _ => {
-                save_status.clone().set("Formato inválido. Use JPG, PNG ou WEBP.".to_string());
-                return;
-            }
-        };
-
-        if file.size() > 5.0 * 1024.0 * 1024.0 {
-            save_status.clone().set("A imagem deve ter no máximo 5 MB.".to_string());
-            return;
-        }
-
-        let current_session = portrait_session.clone();
-        let current_id = portrait_character_id.clone();
-
-        // Clona os sinais antes do async move para não consumi-los da closure do evento.
-        let upload_sheet = sheet.clone();
-        let upload_portrait_url = portrait_url.clone();
-        let upload_status = save_status.clone();
-        let upload_state = portrait_uploading.clone();
-
-        upload_state.clone().set(true);
-        upload_status.clone().set("Enviando imagem...".to_string());
-
-        spawn_local(async move {
-            let result = async {
-                let buffer = JsFuture::from(file.array_buffer()).await
-                    .map_err(|_| "Não foi possível ler a imagem.".to_string())?;
-                let bytes = Uint8Array::new(&buffer).to_vec();
-                cloud::upload_portrait(
-                    &current_session,
-                    &current_id,
-                    &bytes,
-                    &mime,
-                    &extension,
-                ).await
-            }.await;
-
-            match result {
-                Ok((path, url)) => {
-                    upload_sheet.update(|s| s.portrait_path = Some(path));
-                    upload_portrait_url.set(Some(url));
-                    upload_status.set("Imagem enviada. Clique em Salvar ficha para confirmar.".to_string());
-                }
-                Err(error) => upload_status.set(format!("Erro ao enviar imagem: {}", error)),
-            }
-
-            upload_state.set(false);
-        });
-    };
 
     Effect::new(move |_| save_sheet(&sheet.get()));
 
@@ -380,7 +375,17 @@ fn SheetApp(
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
                                     disabled=move || portrait_uploading.get()
-                                    on:change=move |ev| handle_portrait_change(ev)
+                                    on:change=move |ev| {
+                                        handle_portrait_change(
+                                            ev,
+                                            session.clone(),
+                                            character_id.clone(),
+                                            sheet.clone(),
+                                            save_status.clone(),
+                                            portrait_url.clone(),
+                                            portrait_uploading.clone(),
+                                        );
+                                    }
                                 />
                             </label>
                         </div>
