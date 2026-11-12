@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen_futures::spawn_local;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::{spawn_local, JsFuture};
+use js_sys::Uint8Array;
 
 mod inventory;
 mod auth;
@@ -27,6 +29,8 @@ struct Sheet {
     abilities: String,
     capacity: u8,
     notes: String,
+    #[serde(default)]
+    portrait_path: Option<String>,
     #[serde(default = "inventory::default_inventory_width")]
     pub(crate) inventory_width: u8,
     #[serde(default = "inventory::default_inventory_height")]
@@ -54,6 +58,7 @@ impl Default for Sheet {
             abilities: String::new(),
             capacity: 3,
             notes: String::new(),
+            portrait_path: None,
             inventory_width: 6,
             inventory_height: 6,
             inventory_items: Vec::new(),
@@ -135,6 +140,18 @@ fn SheetApp(
     let skill_name = RwSignal::new(String::new());
     let skill_description = RwSignal::new(String::new());
     let skill_form_open = RwSignal::new(false);
+    let portrait_url = RwSignal::new(None::<String>);
+    let portrait_uploading = RwSignal::new(false);
+
+    if let Some(path) = initial_sheet.portrait_path.clone() {
+        let current_session = session.clone();
+        spawn_local(async move {
+            match cloud::portrait_signed_url(&current_session, &path).await {
+                Ok(url) => portrait_url.set(Some(url)),
+                Err(error) => save_status.set(format!("Não foi possível carregar o retrato: {}", error)),
+            }
+        });
+    }
 
     Effect::new(move |_| save_sheet(&sheet.get()));
 
@@ -279,89 +296,125 @@ fn SheetApp(
 
             <section class="content">
                 <Show when=move || tab.get() == 0>
-                    <h2>"Personagem"</h2>
-                    <div class="form-grid">
-                        <label>
-                            "Nome"
-                            <input prop:value=move || sheet.get().name.clone() on:input=move |ev| sheet.update(|s| s.name = event_target_value(&ev)) />
-                        </label>
-                        <label>
-                            "Raça"
-                            <select
-                                prop:value=move || sheet.get().race.clone()
-                                on:change=move |ev| {
+                    <div class="character-profile-layout">
+                        <div class="portrait-card">
+                            <Show when=move || portrait_url.get().is_some() fallback=|| view! {
+                                <div class="portrait-placeholder"><span>"Sem imagem"</span></div>
+                            }>
+                                <img class="character-portrait" src=move || portrait_url.get().unwrap_or_default() alt="Retrato do personagem" />
+                            </Show>
+                            <label class="portrait-upload">
+                                {move || if portrait_uploading.get() { "Enviando..." } else if portrait_url.get().is_some() { "Trocar imagem" } else { "Adicionar imagem" }}
+                                <input
+                                    class="portrait-file-input"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    disabled=move || portrait_uploading.get()
+                                    on:change=move |ev| {
+                                        let input = ev.target().and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok());
+                                        let file = input.and_then(|input| input.files().and_then(|files| files.get(0)));
+                                        let Some(file) = file else { return; };
+                                        let mime = file.type();
+                                        let extension = match mime.as_str() {
+                                            "image/jpeg" => "jpg",
+                                            "image/png" => "png",
+                                            "image/webp" => "webp",
+                                            _ => { save_status.set("Formato inválido. Use JPG, PNG ou WEBP.".to_string()); return; }
+                                        };
+                                        if file.size() > 5.0 * 1024.0 * 1024.0 {
+                                            save_status.set("A imagem deve ter no máximo 5 MB.".to_string());
+                                            return;
+                                        }
+                                        let current_session = session.clone();
+                                        let current_id = character_id.clone();
+                                        portrait_uploading.set(true);
+                                        save_status.set("Enviando imagem...".to_string());
+                                        spawn_local(async move {
+                                            let result = async {
+                                                let buffer = JsFuture::from(file.array_buffer()).await
+                                                    .map_err(|_| "Não foi possível ler a imagem.".to_string())?;
+                                                let bytes = Uint8Array::new(&buffer).to_vec();
+                                                cloud::upload_portrait(&current_session, &current_id, &bytes, &mime, extension).await
+                                            }.await;
+                                            match result {
+                                                Ok((path, url)) => {
+                                                    sheet.update(|s| s.portrait_path = Some(path));
+                                                    portrait_url.set(Some(url));
+                                                    save_status.set("Imagem enviada. Clique em Salvar ficha para confirmar.".to_string());
+                                                }
+                                                Err(error) => save_status.set(format!("Erro ao enviar imagem: {}", error)),
+                                            }
+                                            portrait_uploading.set(false);
+                                        });
+                                    }
+                                />
+                            </label>
+                        </div>
+                        <div class="form-grid character-profile-fields">
+                            <label>
+                                "Nome"
+                                <input prop:value=move || sheet.get().name.clone() on:input=move |ev| sheet.update(|s| s.name = event_target_value(&ev)) />
+                            </label>
+                            <label>
+                                "Raça"
+                                <select prop:value=move || sheet.get().race.clone() on:change=move |ev| {
                                     let selected = event_target_value(&ev);
                                     sheet.update(|s| {
                                         s.race = selected.clone();
                                         let opts = specialization_options_for_race(&selected);
-                                        if opts.is_empty() {
-                                            s.specialization.clear();
-                                        } else if !opts.iter().any(|opt| *opt == s.specialization.as_str()) {
+                                        if opts.is_empty() { s.specialization.clear(); }
+                                        else if !opts.iter().any(|opt| *opt == s.specialization.as_str()) {
                                             s.specialization = opts[0].to_string();
                                         }
                                     });
-                                }
-                            >
-                                <option value="" selected=move || sheet.get().race.is_empty() >"Selecione"</option>
-                                <option value="Humano" selected=move || sheet.get().race == "Humano">"Humano"</option>
-                                <option value="Pesadelo" selected=move || sheet.get().race == "Pesadelo">"Pesadelo"</option>
-                                <option value="Áureo" selected=move || sheet.get().race == "Áureo">"Áureo"</option>
-                            </select>
-                        </label>
-                        <label>
-                            "Especialização"
-                            <select
-                                prop:value=move || sheet.get().specialization.clone()
-                                on:change=move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))
-                            >
-                                <option value="" selected=move || sheet.get().specialization.is_empty() >"Selecione"</option>
-                                {move || {
-                                    specialization_options_for_race(&sheet.get().race)
-                                        .into_iter()
-                                        .map(|opt| {
-                                            let selected = sheet.get().specialization == opt;
-                                            view! { <option value={opt} selected={selected}>{opt}</option> }
-                                        })
-                                        .collect_view()
-                                }}
-                            </select>
-                        </label>
-                        <label>
-                            "Comunidade"
-                            <select
-                                prop:value=move || sheet.get().community.clone()
-                                on:change=move |ev| sheet.update(|s| s.community = event_target_value(&ev))
-                            >
-                                <option value="" selected=move || sheet.get().community.is_empty() >"Selecione"</option>
-                                <option value="Pântano" selected=move || sheet.get().community == "Pântano">"Pântano"</option>
-                                <option value="Tundra" selected=move || sheet.get().community == "Tundra">"Tundra"</option>
-                                <option value="Cidade" selected=move || sheet.get().community == "Cidade">"Cidade"</option>
-                                <option value="Nômade" selected=move || sheet.get().community == "Nômade">"Nômade"</option>
-                                <option value="Deserto" selected=move || sheet.get().community == "Deserto">"Deserto"</option>
-                            </select>
-                        </label>
-                        <label>
-                            "Classe"
-                            <select
-                                prop:value=move || sheet.get().class_name.clone()
-                                on:change=move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))
-                            >
-                                <option value="" selected=move || sheet.get().class_name.is_empty() >"Selecione"</option>
-                                <option value="Médico" selected=move || sheet.get().class_name == "Médico">"Médico"</option>
-                                <option value="Artífice" selected=move || sheet.get().class_name == "Artífice">"Artífice"</option>
-                                <option value="Engenheiro" selected=move || sheet.get().class_name == "Engenheiro">"Engenheiro"</option>
-                                <option value="Magus" selected=move || sheet.get().class_name == "Magus">"Magus"</option>
-                                <option value="Cozinheiro" selected=move || sheet.get().class_name == "Cozinheiro">"Cozinheiro"</option>
-                            </select>
-                        </label>
-                        <label>
-                            "Nível"
-                            <input type="number" min="1" max="10" prop:value=move || sheet.get().level.to_string() on:input=move |ev| {
-                                if let Ok(v) = event_target_value(&ev).parse::<u8>() {
-                                    sheet.update(|s| s.level = v.clamp(1, 10));
-                                }
-                            } />
-                        </label>
+                                }>
+                                    <option value="" selected=move || sheet.get().race.is_empty()>"Selecione"</option>
+                                    <option value="Humano" selected=move || sheet.get().race == "Humano">"Humano"</option>
+                                    <option value="Pesadelo" selected=move || sheet.get().race == "Pesadelo">"Pesadelo"</option>
+                                    <option value="Áureo" selected=move || sheet.get().race == "Áureo">"Áureo"</option>
+                                </select>
+                            </label>
+                            <label>
+                                "Especialização"
+                                <select prop:value=move || sheet.get().specialization.clone() on:change=move |ev| sheet.update(|s| s.specialization = event_target_value(&ev))>
+                                    <option value="" selected=move || sheet.get().specialization.is_empty()>"Selecione"</option>
+                                    {move || specialization_options_for_race(&sheet.get().race).into_iter().map(|opt| {
+                                        let selected = sheet.get().specialization == opt;
+                                        view! { <option value={opt} selected={selected}>{opt}</option> }
+                                    }).collect_view()}
+                                </select>
+                            </label>
+                            <label>
+                                "Comunidade"
+                                <select prop:value=move || sheet.get().community.clone() on:change=move |ev| sheet.update(|s| s.community = event_target_value(&ev))>
+                                    <option value="" selected=move || sheet.get().community.is_empty()>"Selecione"</option>
+                                    <option value="Pântano" selected=move || sheet.get().community == "Pântano">"Pântano"</option>
+                                    <option value="Tundra" selected=move || sheet.get().community == "Tundra">"Tundra"</option>
+                                    <option value="Cidade" selected=move || sheet.get().community == "Cidade">"Cidade"</option>
+                                    <option value="Nômade" selected=move || sheet.get().community == "Nômade">"Nômade"</option>
+                                    <option value="Deserto" selected=move || sheet.get().community == "Deserto">"Deserto"</option>
+                                </select>
+                            </label>
+                            <label>
+                                "Classe"
+                                <select prop:value=move || sheet.get().class_name.clone() on:change=move |ev| sheet.update(|s| s.class_name = event_target_value(&ev))>
+                                    <option value="" selected=move || sheet.get().class_name.is_empty()>"Selecione"</option>
+                                    <option value="Médico" selected=move || sheet.get().class_name == "Médico">"Médico"</option>
+                                    <option value="Artífice" selected=move || sheet.get().class_name == "Artífice">"Artífice"</option>
+                                    <option value="Engenheiro" selected=move || sheet.get().class_name == "Engenheiro">"Engenheiro"</option>
+                                    <option value="Magus" selected=move || sheet.get().class_name == "Magus">"Magus"</option>
+                                    <option value="Cozinheiro" selected=move || sheet.get().class_name == "Cozinheiro">"Cozinheiro"</option>
+                                </select>
+                            </label>
+                            <label>
+                                "Nível"
+                                <input type="number" min="1" max="10" prop:value=move || sheet.get().level.to_string() on:input=move |ev| {
+                                    if let Ok(v) = event_target_value(&ev).parse::<u8>() {
+                                        sheet.update(|s| s.level = v.clamp(1, 10));
+                                    }
+                                } />
+                            </label>
+                        </div>
                     </div>
 
                     <h3>"Habilidades"</h3>
@@ -493,7 +546,7 @@ fn SheetApp(
                             saving.set(true);
                             save_status.set("Salvando...".to_string());
                             spawn_local(async move {
-                                let result = cloud::update_character(&current_session, &current_id, &name, data).await;
+                                let result = cloud::update_character(&current_session, &current_id, &name, current_sheet.portrait_path.as_deref(), data).await;
                                 match result {
                                     Ok(()) => {
                                         save_status.set("Ficha salva na nuvem.".to_string());
