@@ -85,8 +85,12 @@ async fn prepare_account(
         }
     };
 
-    let sheet = serde_json::from_value::<Sheet>(character.sheet_data)
+    let stored_portrait_path = character.portrait_path.clone();
+    let mut sheet = serde_json::from_value::<Sheet>(character.sheet_data)
         .unwrap_or_default();
+    if sheet.portrait_path.is_none() {
+        sheet.portrait_path = stored_portrait_path;
+    }
 
     Ok((session, sheet, character.id))
 }
@@ -132,6 +136,7 @@ fn SheetApp(
     character_id: String,
     on_logout: Callback<()>,
 ) -> impl IntoView {
+    let initial_portrait_path = initial_sheet.portrait_path.clone();
     let sheet = RwSignal::new(initial_sheet);
     let save_status = RwSignal::new(String::new());
     let saving = RwSignal::new(false);
@@ -143,7 +148,7 @@ fn SheetApp(
     let portrait_url = RwSignal::new(None::<String>);
     let portrait_uploading = RwSignal::new(false);
 
-    if let Some(path) = initial_sheet.portrait_path.clone() {
+    if let Some(path) = initial_portrait_path {
         let current_session = session.clone();
         spawn_local(async move {
             match cloud::portrait_signed_url(&current_session, &path).await {
