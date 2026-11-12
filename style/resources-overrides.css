@@ -135,3 +135,161 @@
         text-align: center;
     }
 }
+
+
+/* ================================
+   PERFIL — HIERARQUIA VISUAL
+   Refinamento restrito à aba Personagem.
+================================ */
+
+.character-profile-layout {
+    grid-template-columns: 168px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 18px;
+    padding: 16px;
+    border-color: #2b3439;
+    border-radius: 12px;
+    background: #151a1e;
+}
+
+.portrait-card {
+    min-height: 0;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.character-portrait,
+.portrait-placeholder {
+    height: 218px;
+    border: 1px solid #303c40;
+    border-radius: 8px;
+    background: #1b2425;
+}
+
+.portrait-placeholder {
+    color: #91a69b;
+    letter-spacing: .03em;
+}
+
+.portrait-upload {
+    min-height: 36px;
+    border-color: #465d53;
+    border-radius: 7px;
+    background: #1b2421;
+    color: #c0d8c9;
+    font-size: 11px;
+    letter-spacing: .01em;
+    transition: background .18s ease, border-color .18s ease;
+}
+
+.portrait-upload:hover {
+    background: #24332c;
+    border-color: #829f8e;
+}
+
+.character-profile-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    align-items: start;
+    gap: 13px 14px;
+    padding: 2px 0;
+}
+
+.character-profile-fields label {
+    gap: 6px;
+    color: #929fa4;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+}
+
+.character-profile-fields label:first-child {
+    grid-column: 1 / -1;
+}
+
+.character-profile-fields input,
+.character-profile-fields select {
+    min-height: 39px;
+    padding: 8px 10px;
+    border-color: #303b40;
+    border-radius: 7px;
+    background: #1b2226;
+    color: #e6ebe8;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: border-color .18s ease, background .18s ease;
+}
+
+.character-profile-fields label:first-child input {
+    min-height: 44px;
+    background: #1c2526;
+    border-color: #3b4a45;
+    color: #f0f4f1;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.character-profile-fields input:focus,
+.character-profile-fields select:focus {
+    border-color: #8eae9b;
+    background: #202a29;
+}
+
+@media (max-width: 540px) {
+    .character-profile-layout {
+        grid-template-columns: 112px minmax(0, 1fr);
+        gap: 11px;
+        padding: 10px;
+    }
+
+    .character-portrait,
+    .portrait-placeholder {
+        height: 148px;
+    }
+
+    .portrait-upload {
+        min-height: 32px;
+        font-size: 10px;
+    }
+
+    .character-profile-fields {
+        gap: 10px 8px;
+        padding: 0;
+    }
+
+    .character-profile-fields label {
+        gap: 5px;
+        font-size: 9px;
+    }
+
+    .character-profile-fields input,
+    .character-profile-fields select {
+        min-height: 35px;
+        padding: 6px 7px;
+        font-size: 11px;
+    }
+
+    .character-profile-fields label:first-child input {
+        min-height: 39px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 350px) {
+    .character-profile-layout {
+        grid-template-columns: 94px minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .character-portrait,
+    .portrait-placeholder {
+        height: 132px;
+    }
+}
