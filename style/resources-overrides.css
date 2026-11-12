@@ -295,8 +295,11 @@
 }
 
 
-/* Centraliza somente o campo Nível no perfil do personagem. */
+/* Posiciona o campo Nível em uma linha própria, centralizado abaixo dos demais campos. */
 .character-profile-fields label:last-child {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(50%, 180px);
     align-items: center;
     text-align: center;
 }
@@ -304,4 +307,10 @@
 .character-profile-fields label:last-child input {
     width: 100%;
     text-align: center;
+}
+
+@media (max-width: 540px) {
+    .character-profile-fields label:last-child {
+        width: min(60%, 180px);
+    }
 }
