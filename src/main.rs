@@ -158,32 +158,51 @@ fn SheetApp(
         });
     }
 
+    // Estes clones ficam no ambiente da closure reutilizável do evento.
+    // Os valores de cada arquivo selecionado são movidos apenas para sua tarefa assíncrona.
+    let portrait_session = session.clone();
+    let portrait_character_id = character_id.clone();
+
     let handle_portrait_change = move |ev: web_sys::Event| {
         let input = ev.target().and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok());
         let file = input.and_then(|input| input.files().and_then(|files| files.get(0)));
         let Some(file) = file else { return; };
+
         let mime = file.type_();
         let extension = match mime.as_str() {
-            "image/jpeg" => "jpg",
-            "image/png" => "png",
-            "image/webp" => "webp",
-            _ => { save_status.set("Formato inválido. Use JPG, PNG ou WEBP.".to_string()); return; }
+            "image/jpeg" => String::from("jpg"),
+            "image/png" => String::from("png"),
+            "image/webp" => String::from("webp"),
+            _ => {
+                save_status.set("Formato inválido. Use JPG, PNG ou WEBP.".to_string());
+                return;
+            }
         };
+
         if file.size() > 5.0 * 1024.0 * 1024.0 {
             save_status.set("A imagem deve ter no máximo 5 MB.".to_string());
             return;
         }
-        let current_session = session.clone();
-        let current_id = character_id.clone();
+
+        let current_session = portrait_session.clone();
+        let current_id = portrait_character_id.clone();
         portrait_uploading.set(true);
         save_status.set("Enviando imagem...".to_string());
+
         spawn_local(async move {
             let result = async {
                 let buffer = JsFuture::from(file.array_buffer()).await
                     .map_err(|_| "Não foi possível ler a imagem.".to_string())?;
                 let bytes = Uint8Array::new(&buffer).to_vec();
-                cloud::upload_portrait(&current_session, &current_id, &bytes, &mime, extension).await
+                cloud::upload_portrait(
+                    &current_session,
+                    &current_id,
+                    &bytes,
+                    &mime,
+                    &extension,
+                ).await
             }.await;
+
             match result {
                 Ok((path, url)) => {
                     sheet.update(|s| s.portrait_path = Some(path));
@@ -192,6 +211,7 @@ fn SheetApp(
                 }
                 Err(error) => save_status.set(format!("Erro ao enviar imagem: {}", error)),
             }
+
             portrait_uploading.set(false);
         });
     };
