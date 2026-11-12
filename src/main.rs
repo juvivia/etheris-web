@@ -353,7 +353,7 @@ fn SheetApp(
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
                                     disabled=move || portrait_uploading.get()
-                                    on:change=handle_portrait_change
+                                    on:change=move |ev| handle_portrait_change(ev)
                                 />
                             </label>
                         </div>
