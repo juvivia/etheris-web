@@ -578,7 +578,7 @@ fn SheetApp(
                         disabled=move || saving.get()
                         on:click=move |_| {
                             let current_sheet = sheet.get();
-                            let current_session = session.clone();
+                            let current_session = session.get();
                             let current_id = character_id.get();
                             let name = current_sheet.name.clone();
                             let data = match serde_json::to_value(&current_sheet) {
