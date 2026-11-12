@@ -158,7 +158,7 @@ pub async fn upload_portrait(
 ) -> Result<(String, String), String> {
     let path = format!("{}/{}/portrait.{}", character_id, session.user.id, extension);
     let url = format!("{}/storage/v1/object/{}/{}", SUPABASE_URL, PORTRAIT_BUCKET, path);
-    let body = Uint8Array::from(bytes).into();
+    let body: wasm_bindgen::JsValue = Uint8Array::from(bytes).into();
 
     let response = Request::post(&url)
         .header("apikey", SUPABASE_KEY)
