@@ -174,20 +174,27 @@ fn SheetApp(
             "image/png" => String::from("png"),
             "image/webp" => String::from("webp"),
             _ => {
-                save_status.set("Formato inválido. Use JPG, PNG ou WEBP.".to_string());
+                save_status.clone().set("Formato inválido. Use JPG, PNG ou WEBP.".to_string());
                 return;
             }
         };
 
         if file.size() > 5.0 * 1024.0 * 1024.0 {
-            save_status.set("A imagem deve ter no máximo 5 MB.".to_string());
+            save_status.clone().set("A imagem deve ter no máximo 5 MB.".to_string());
             return;
         }
 
         let current_session = portrait_session.clone();
         let current_id = portrait_character_id.clone();
-        portrait_uploading.set(true);
-        save_status.set("Enviando imagem...".to_string());
+
+        // Clona os sinais antes do async move para não consumi-los da closure do evento.
+        let upload_sheet = sheet.clone();
+        let upload_portrait_url = portrait_url.clone();
+        let upload_status = save_status.clone();
+        let upload_state = portrait_uploading.clone();
+
+        upload_state.clone().set(true);
+        upload_status.clone().set("Enviando imagem...".to_string());
 
         spawn_local(async move {
             let result = async {
@@ -205,14 +212,14 @@ fn SheetApp(
 
             match result {
                 Ok((path, url)) => {
-                    sheet.update(|s| s.portrait_path = Some(path));
-                    portrait_url.set(Some(url));
-                    save_status.set("Imagem enviada. Clique em Salvar ficha para confirmar.".to_string());
+                    upload_sheet.update(|s| s.portrait_path = Some(path));
+                    upload_portrait_url.set(Some(url));
+                    upload_status.set("Imagem enviada. Clique em Salvar ficha para confirmar.".to_string());
                 }
-                Err(error) => save_status.set(format!("Erro ao enviar imagem: {}", error)),
+                Err(error) => upload_status.set(format!("Erro ao enviar imagem: {}", error)),
             }
 
-            portrait_uploading.set(false);
+            upload_state.set(false);
         });
     };
 
