@@ -162,7 +162,7 @@ fn SheetApp(
         let input = ev.target().and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok());
         let file = input.and_then(|input| input.files().and_then(|files| files.get(0)));
         let Some(file) = file else { return; };
-        let mime = file.type();
+        let mime = file.type_();
         let extension = match mime.as_str() {
             "image/jpeg" => "jpg",
             "image/png" => "png",
