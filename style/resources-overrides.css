@@ -314,3 +314,44 @@
         width: min(60%, 180px);
     }
 }
+
+
+/* Botão de rotação integrado ao canto do item médio do inventário. */
+.inventory-item {
+    position: relative;
+}
+
+.inventory-item .inventory-rotate {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    border: 1px solid rgba(235, 244, 238, 0.28);
+    border-radius: 7px;
+    background: rgba(20, 29, 27, 0.82);
+    color: #e5eee8;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(4px);
+    transition: background .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.inventory-item .inventory-rotate:hover {
+    background: rgba(39, 59, 49, 0.96);
+    border-color: #a7c6b1;
+    color: #ffffff;
+    transform: rotate(35deg);
+}
+
+.inventory-item .inventory-rotate:focus-visible {
+    outline: 2px solid #a7c6b1;
+    outline-offset: 2px;
+}
