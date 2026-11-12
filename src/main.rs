@@ -473,7 +473,7 @@ fn SheetApp(
                                 save_status.set("Edite os valores máximos e os atributos e clique em Salvar ficha.".to_string());
                             }
                         >
-                            "Editar máximos"
+                            "Editar atributos"
                         </button>
                     </Show>
 
