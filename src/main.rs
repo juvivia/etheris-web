@@ -198,6 +198,9 @@ fn SheetApp(
 ) -> impl IntoView {
     let initial_portrait_path = initial_sheet.portrait_path.clone();
     let sheet = RwSignal::new(initial_sheet);
+    // Handles Copy evitam que closures internas do view! movam dados não-Copy.
+    let session = RwSignal::new(session);
+    let character_id = RwSignal::new(character_id);
     let save_status = RwSignal::new(String::new());
     let saving = RwSignal::new(false);
     let tab = RwSignal::new(0usize);
@@ -209,7 +212,7 @@ fn SheetApp(
     let portrait_uploading = RwSignal::new(false);
 
     if let Some(path) = initial_portrait_path {
-        let current_session = session.clone();
+        let current_session = session.get();
         spawn_local(async move {
             match cloud::portrait_signed_url(&current_session, &path).await {
                 Ok(url) => portrait_url.set(Some(url)),
@@ -378,8 +381,8 @@ fn SheetApp(
                                     on:change=move |ev| {
                                         handle_portrait_change(
                                             ev,
-                                            session.clone(),
-                                            character_id.clone(),
+                                            session.get(),
+                                            character_id.get(),
                                             sheet.clone(),
                                             save_status.clone(),
                                             portrait_url.clone(),
@@ -576,7 +579,7 @@ fn SheetApp(
                         on:click=move |_| {
                             let current_sheet = sheet.get();
                             let current_session = session.clone();
-                            let current_id = character_id.clone();
+                            let current_id = character_id.get();
                             let name = current_sheet.name.clone();
                             let data = match serde_json::to_value(&current_sheet) {
                                 Ok(value) => value,
